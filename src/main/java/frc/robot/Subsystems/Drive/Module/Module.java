@@ -38,8 +38,9 @@ public class Module {
     int sampleCount = inputs.odometryTimestamps.length;
     odometryPositions = new SwerveModulePosition[sampleCount];
     for (int i = 0; i < sampleCount; i++) {
-      double posMeters = inputs.odometryDrivePos[i] * Constants.DriveConstants.wheelRadiusMeters;
-      Rotation2d angle = inputs.odometryTurnPos[i];
+      double posMeters =
+          inputs.odometryDrivePositionsRad[i] * Constants.DriveConstants.wheelRadiusMeters;
+      Rotation2d angle = inputs.odometryTurnPositions[i];
       odometryPositions[i] = new SwerveModulePosition(posMeters, angle);
     }
     // update alerts
@@ -49,9 +50,9 @@ public class Module {
 
   public void runSwerveState(SwerveModuleState state) {
     state.optimize(getAngle());
-    state.cosineScale(inputs.turnPos);
+    state.cosineScale(inputs.turnPosition);
 
-    io.setDrivevelo(state.speedMetersPerSecond / Constants.driveConstants.wheelRadius);
+    io.setDriveVelo(state.speedMetersPerSecond / Constants.DriveConstants.wheelRadiusMeters);
     io.setTurnPos(state.angle);
   }
 
@@ -66,15 +67,15 @@ public class Module {
   }
 
   public Rotation2d getAngle() {
-    return inputs.turnPos;
+    return inputs.turnPosition;
   }
 
   public double getPosMeters() {
-    return inputs.drivePosRad * Constants.DriveConstants.wheelRadiusMeters;
+    return inputs.drivePositionRad * Constants.DriveConstants.wheelRadiusMeters;
   }
 
   public double getVelo() { // meters per second
-    return inputs.driveSpeedVelo * Constants.DriveConstants.wheelRadiusMeters;
+    return inputs.driveVelocityRadPerSec * Constants.DriveConstants.wheelRadiusMeters;
   }
 
   public SwerveModulePosition getPosition() {
@@ -94,10 +95,10 @@ public class Module {
   }
 
   public double getWheelRadiusCharacterizationPosition() {
-    return inputs.drivePosRad;
+    return inputs.drivePositionRad;
   }
 
   public double getFFCharacterizationVelocity() {
-    return inputs.driveSpeedVelo;
+    return inputs.driveVelocityRadPerSec;
   }
 }
