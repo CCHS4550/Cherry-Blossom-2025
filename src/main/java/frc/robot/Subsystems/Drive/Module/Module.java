@@ -1,6 +1,5 @@
 package frc.robot.Subsystems.Drive.Module;
 
-
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
@@ -54,7 +53,6 @@ public class Module {
     io.setDriveVelo(state.speedMetersPerSecond / Constants.DriveConstants.wheelRadiusMeters);
     io.setTurnPos(state.angle);
   }
-  
 
   public void runCharacterization(double output) {
     io.setDriveOpenLoop(output);
