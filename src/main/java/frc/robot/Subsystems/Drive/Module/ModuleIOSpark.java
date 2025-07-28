@@ -16,8 +16,6 @@ import com.revrobotics.spark.SparkMax;
 import com.revrobotics.spark.config.ClosedLoopConfig.FeedbackSensor;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 import com.revrobotics.spark.config.SparkMaxConfig;
-import com.revrobotics.spark.config.SparkMaxConfigAccessor;
-
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.filter.Debouncer;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -44,7 +42,7 @@ public class ModuleIOSpark implements ModuleIO {
 
   private final Debouncer driveDebouncer = new Debouncer(0.5);
   private final Debouncer turnDebouncer = new Debouncer(0.5);
-  private static DoubleSupplier turnMaxVeloSupplier = ()-> 0.7;
+  private static DoubleSupplier turnMaxVeloSupplier = () -> 0.7;
 
   public ModuleIOSpark(int module) {
     rotationOffset =
@@ -115,7 +113,10 @@ public class ModuleIOSpark implements ModuleIO {
         .positionWrappingInputRange(
             Constants.DriveConstants.turnPIDMinInput, Constants.DriveConstants.turnPIDMaxInput)
         .pidf(Constants.DriveConstants.turnKp, 0.0, Constants.DriveConstants.turnKd, 0.0)
-        .outputRange(-1 * turnMaxVeloSupplier.getAsDouble(), turnMaxVeloSupplier.getAsDouble(), ClosedLoopSlot.kSlot1);
+        .outputRange(
+            -1 * turnMaxVeloSupplier.getAsDouble(),
+            turnMaxVeloSupplier.getAsDouble(),
+            ClosedLoopSlot.kSlot1);
     turnConfig
         .signals
         .absoluteEncoderPositionAlwaysOn(true)
@@ -262,7 +263,7 @@ public class ModuleIOSpark implements ModuleIO {
   }
 
   @Override
-  public void setTurnPosWithLimitedVelo(Rotation2d rotation){
+  public void setTurnPosWithLimitedVelo(Rotation2d rotation) {
     double setPoint =
         MathUtil.inputModulus(
             rotation.plus(rotationOffset).getRadians(),
@@ -271,8 +272,13 @@ public class ModuleIOSpark implements ModuleIO {
     turnController.setReference(setPoint, ControlType.kPosition, ClosedLoopSlot.kSlot1);
   }
 
-  private static DoubleSupplier setMaxTurnVelo(double maxVelo){ //so basically since the speed limit is set with in the turn config, im pretty sure calling this does nothing, and if you want the max velo to change you need to reconfigure the motor controller, which you should NOT do.there are still closed loop slots open worst case
-    turnMaxVeloSupplier = ()-> maxVelo;
+  private static DoubleSupplier setMaxTurnVelo(
+      double
+          maxVelo) { // so basically since the speed limit is set with in the turn config, im pretty
+    // sure calling this does nothing, and if you want the max velo to change you
+    // need to reconfigure the motor controller, which you should NOT do.there are
+    // still closed loop slots open worst case
+    turnMaxVeloSupplier = () -> maxVelo;
     return turnMaxVeloSupplier;
   }
 }
