@@ -37,4 +37,6 @@ public interface ModuleIO {
 
   /** Run the turn motor to the specified rotation. */
   public default void setTurnPos(Rotation2d rotation) {}
+  /** Run the turn motor to a specified rotation with a max velocity*/
+  public default void setTurnPosWithLimitedVelo (Rotation2d rotation) {}
 }

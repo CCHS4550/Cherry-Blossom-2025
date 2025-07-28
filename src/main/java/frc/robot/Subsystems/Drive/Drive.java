@@ -93,8 +93,7 @@ public class Drive extends SubsystemBase {
 
     Logger.recordOutput("SwerveStates/SetpointsOptimized", setPointStates);
   }
-
-  public void runVelocity(ChassisSpeeds speeds, double angleVeloLimit) {
+  public void runVelocityWithLimitedMaxTurnVelo(ChassisSpeeds speeds) {
     ChassisSpeeds discreteSpeeds = ChassisSpeeds.discretize(speeds, 0.02);
     SwerveModuleState[] setPointStates = kinematics.toSwerveModuleStates(discreteSpeeds);
     SwerveDriveKinematics.desaturateWheelSpeeds(
@@ -104,7 +103,7 @@ public class Drive extends SubsystemBase {
     Logger.recordOutput("SwerveChassisSpeeds/Setpoints", discreteSpeeds);
 
     for (int i = 0; i < 4; i++) {
-      modules[i].runSwerveState(setPointStates[i]);
+      modules[i].runSwerveStateWithLimitedMaxTurnVelo(setPointStates[i]);
     }
 
     Logger.recordOutput("SwerveStates/SetpointsOptimized", setPointStates);
