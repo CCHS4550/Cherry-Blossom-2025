@@ -1,2 +1,2 @@
 # plswork
-# why is gradle being a jerk
+why is gradle being a jerk
