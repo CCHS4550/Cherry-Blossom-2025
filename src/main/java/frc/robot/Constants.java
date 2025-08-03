@@ -42,6 +42,7 @@ public final class Constants {
   }
 
   public final class DriveConstants {
+    public static final double deadband = 0.0;
     public static final double maxSpeedMetersPerSec = 4.8;
     public static final double odometryFrequency = 100.0; // Hz
     public static final double trackWidth = Units.inchesToMeters(26.5);
