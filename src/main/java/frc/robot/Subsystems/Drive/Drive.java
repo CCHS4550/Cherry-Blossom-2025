@@ -8,6 +8,7 @@ import edu.wpi.first.hal.FRCNetComm.tInstances;
 import edu.wpi.first.hal.FRCNetComm.tResourceType;
 import edu.wpi.first.hal.HAL;
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -17,6 +18,7 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
+import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj.DriverStation;
@@ -30,14 +32,25 @@ import frc.robot.Subsystems.Drive.Gyro.GyroIO;
 import frc.robot.Subsystems.Drive.Gyro.GyroIOInputsAutoLogged;
 import frc.robot.Subsystems.Drive.Module.*;
 import frc.robot.Subsystems.Drive.Module.Module;
+import frc.robot.Util.LocalADStarAK;
+
 import java.util.Optional;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.DoubleSupplier;
+import java.util.function.Supplier;
+
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 
+import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.config.PIDConstants;
+import com.pathplanner.lib.controllers.PPHolonomicDriveController;
+import com.pathplanner.lib.pathfinding.Pathfinding;
+import com.pathplanner.lib.util.PathPlannerLogging;
+
 public class Drive extends SubsystemBase {
+  
   static final Lock odometryLock = new ReentrantLock();
   private final GyroIO gyroIO;
   private final GyroIOInputsAutoLogged gyroInputs = new GyroIOInputsAutoLogged();
@@ -57,21 +70,25 @@ public class Drive extends SubsystemBase {
   private DoubleSupplier xJoystickInput = () -> 0.0;
   private DoubleSupplier yJoystickInput = () -> 0.0;
   private DoubleSupplier omegaJoystickInput = () -> 0.0;
+  private DoubleSupplier maxOptionalTurnVeloRadiansPerSec = ()-> Constants.DriveConstants.ANGLE_MAX_VELOCITY;
+  private Supplier<Rotation2d> driveAtAngleAngle = () -> new Rotation2d().fromRadians(0.0);
 
   public enum WantedState {
     SYS_ID,
+    AUTO,
     TELEOP_DRIVE,
+    TELEOP_DRIVE_AT_ANGLE,
     CHOREO_PATH,
-    ROTATION_LOCK,
     DRIVE_TO_POINT,
     IDLE
   }
 
   public enum SystemState {
     SYS_ID,
+    AUTO,
     TELEOP_DRIVE,
+    TELEOP_DRIVE_AT_ANGLE,
     CHOREO_PATH,
-    ROTATION_LOCK,
     DRIVE_TO_POINT,
     IDLE
   }
@@ -117,8 +134,28 @@ public class Drive extends SubsystemBase {
 
     SparkOdometryThread.getInstance().start();
 
-    // AutoBuilder.configure(null, null, null, null, null, null, null, null);
-    sysId =
+    AutoBuilder.configure(
+        this::getPose,
+        this::setPose,
+        this::getChassisSpeeds,
+        this::runVelocity,
+        new PPHolonomicDriveController(
+            new PIDConstants(5.0, 0.0, 0.0), new PIDConstants(5.0, 0.0, 0.0)),
+        Constants.DriveConstants.ppConfig,
+        () -> DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red,
+        this);
+    Pathfinding.setPathfinder(new LocalADStarAK());
+    PathPlannerLogging.setLogActivePathCallback(
+        (activePath) -> {
+          Logger.recordOutput(
+              "Odometry/Trajectory", activePath.toArray(new Pose2d[activePath.size()]));
+        });
+    PathPlannerLogging.setLogTargetPoseCallback(
+        (targetPose) -> {
+          Logger.recordOutput("Odometry/TrajectorySetpoint", targetPose);
+        });
+    
+        sysId =
         new SysIdRoutine(
             new SysIdRoutine.Config(
                 null,
@@ -135,7 +172,9 @@ public class Drive extends SubsystemBase {
   private SystemState handleStateTransition() {
     return switch (wantedState) {
       case SYS_ID -> SystemState.SYS_ID;
+      case AUTO -> SystemState.AUTO;
       case TELEOP_DRIVE -> SystemState.TELEOP_DRIVE;
+      case TELEOP_DRIVE_AT_ANGLE -> SystemState.TELEOP_DRIVE_AT_ANGLE;
       case CHOREO_PATH -> {
         if (systemState != SystemState.CHOREO_PATH) {
           choreoTimer.restart();
@@ -146,7 +185,6 @@ public class Drive extends SubsystemBase {
           yield SystemState.CHOREO_PATH;
         }
       }
-      case ROTATION_LOCK -> SystemState.ROTATION_LOCK;
       case DRIVE_TO_POINT -> SystemState.DRIVE_TO_POINT;
       default -> SystemState.IDLE;
     };
@@ -158,14 +196,21 @@ public class Drive extends SubsystemBase {
       case SYS_ID:
         runSysID();
         break;
+      case AUTO:
+        break;
       case TELEOP_DRIVE:
         joystickDrive(xJoystickInput, yJoystickInput, omegaJoystickInput);
+      case TELEOP_DRIVE_AT_ANGLE:
+        joystickDriveAngleLock(xJoystickInput, yJoystickInput, driveAtAngleAngle);
       case CHOREO_PATH:
+        break;
+      case DRIVE_TO_POINT:
         break;
     }
   }
 
   public void runVelocity(ChassisSpeeds speeds) {
+
     ChassisSpeeds discreteSpeeds = ChassisSpeeds.discretize(speeds, 0.02);
     SwerveModuleState[] setPointStates = kinematics.toSwerveModuleStates(discreteSpeeds);
     SwerveDriveKinematics.desaturateWheelSpeeds(
@@ -181,7 +226,14 @@ public class Drive extends SubsystemBase {
     Logger.recordOutput("SwerveStates/SetpointsOptimized", setPointStates);
   }
 
-  public void runVelocityWithLimitedMaxTurnVelo(ChassisSpeeds speeds) {
+  public void runVelocityWithMaxTurnVelo(ChassisSpeeds speeds, DoubleSupplier maxTurnVelocityRadiansPerSecond) {
+    
+    //limits our requested rotational speed to a maxium velocity before desscretizing to avoid any unintentionalskew
+    //simply setting a max cap and not a scale because I dont care how it gets up to this max velo
+    if(speeds.omegaRadiansPerSecond > maxTurnVelocityRadiansPerSecond.getAsDouble()){
+      speeds.omegaRadiansPerSecond = maxTurnVelocityRadiansPerSecond.getAsDouble();
+    }
+    
     ChassisSpeeds discreteSpeeds = ChassisSpeeds.discretize(speeds, 0.02);
     SwerveModuleState[] setPointStates = kinematics.toSwerveModuleStates(discreteSpeeds);
     SwerveDriveKinematics.desaturateWheelSpeeds(
@@ -191,7 +243,7 @@ public class Drive extends SubsystemBase {
     Logger.recordOutput("SwerveChassisSpeeds/Setpoints", discreteSpeeds);
 
     for (int i = 0; i < 4; i++) {
-      modules[i].runSwerveStateWithLimitedMaxTurnVelo(setPointStates[i]);
+      modules[i].runSwerveState(setPointStates[i]);
     }
     Logger.recordOutput("SwerveStates/SetpointsOptimized", setPointStates);
   }
@@ -199,7 +251,7 @@ public class Drive extends SubsystemBase {
   public void joystickDrive(
       DoubleSupplier xSupplier, DoubleSupplier ySupplier, DoubleSupplier omegaSupplier) {
     Translation2d linearVelocity =
-        getLinearVelocityFromXY(xSupplier.getAsDouble(), ySupplier.getAsDouble());
+        getLinearVelocityFromXY(xSupplier.getAsDouble(), ySupplier.getAsDouble(), Constants.DriveConstants.deadband);
 
     // Apply rotation deadband
     double omega =
@@ -220,6 +272,16 @@ public class Drive extends SubsystemBase {
     runVelocity(
         ChassisSpeeds.fromFieldRelativeSpeeds(
             speeds, isFlipped ? getRotation().plus(new Rotation2d(Math.PI)) : getRotation()));
+  }
+
+  public void joystickDriveAngleLock(DoubleSupplier xSupplier, DoubleSupplier ySupplier,  Supplier<Rotation2d> rotationSupplier){
+     ProfiledPIDController angleController =
+        new ProfiledPIDController(
+            Constants.DriveConstants.ANGLE_KP,
+            0.0,
+            Constants.DriveConstants.ANGLE_KD,
+            new TrapezoidProfile.Constraints(Constants.DriveConstants.ANGLE_MAX_VELOCITY, Constants.DriveConstants.ANGLE_MAX_ACCELERATION));
+    angleController.enableContinuousInput(-Math.PI, Math.PI);
   }
 
   public void runSysID() {
@@ -377,5 +439,13 @@ public class Drive extends SubsystemBase {
 
   public void setOmegaJoystickInput(double omega) {
     omegaJoystickInput = () -> omega;
+  }
+
+  public void setMaxOptionalTurnVeloRadiansPerSec(double speed){
+    maxOptionalTurnVeloRadiansPerSec = () -> speed;
+  }
+
+  public void setAngleLockAngle (Rotation2d radians){
+    driveAtAngleAngle = () -> radians;
   }
 }
