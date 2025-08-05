@@ -8,6 +8,7 @@ import edu.wpi.first.hal.FRCNetComm.tInstances;
 import edu.wpi.first.hal.FRCNetComm.tResourceType;
 import edu.wpi.first.hal.HAL;
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
 import edu.wpi.first.math.geometry.Pose2d;
@@ -19,6 +20,7 @@ import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj.DriverStation;
@@ -67,11 +69,20 @@ public class Drive extends SubsystemBase {
   private final Timer choreoTimer = new Timer();
   private Optional<SwerveSample> choreoSampleToBeApplied;
 
-  private DoubleSupplier xJoystickInput = () -> 0.0;
-  private DoubleSupplier yJoystickInput = () -> 0.0;
-  private DoubleSupplier omegaJoystickInput = () -> 0.0;
-  private DoubleSupplier maxOptionalTurnVeloRadiansPerSec = ()-> Constants.DriveConstants.ANGLE_MAX_VELOCITY;
-  private Supplier<Rotation2d> driveAtAngleAngle = () -> new Rotation2d().fromRadians(0.0);
+  public double xJoystickInput =  0.0;
+  public double yJoystickInput =  0.0;
+  public double omegaJoystickInput =  0.0;
+  public double maxOptionalTurnVeloRadiansPerSec =  Double.NaN;
+  public double maxVelocityOutputForDriveToPoint = Units.feetToMeters(10.0);
+  public Rotation2d joystickDriveAtAngleAngle = Rotation2d.fromRadians(0.0);
+
+  private final PIDController autoDriveToPointController = new PIDController(3.0, 0, 0.1);
+  private final PIDController teleopDriveToPointController = new PIDController(3.6, 0, 0.1);
+  private Pose2d driveToPointPose = new Pose2d();
+
+  private final PIDController choreoXController = new PIDController(7, 0, 0);
+  private final PIDController choreoYController = new PIDController(7, 0, 0);
+  private final PIDController choreoThetaController = new PIDController(7, 0, 0);
 
   public enum WantedState {
     SYS_ID,
@@ -201,10 +212,11 @@ public class Drive extends SubsystemBase {
       case TELEOP_DRIVE:
         joystickDrive(xJoystickInput, yJoystickInput, omegaJoystickInput);
       case TELEOP_DRIVE_AT_ANGLE:
-        joystickDriveAngleLock(xJoystickInput, yJoystickInput, driveAtAngleAngle);
+        driveAtAngle(xJoystickInput, yJoystickInput, joystickDriveAtAngleAngle);
       case CHOREO_PATH:
         break;
       case DRIVE_TO_POINT:
+        driveToPoint();
         break;
     }
   }
@@ -226,12 +238,12 @@ public class Drive extends SubsystemBase {
     Logger.recordOutput("SwerveStates/SetpointsOptimized", setPointStates);
   }
 
-  public void runVelocityWithMaxTurnVelo(ChassisSpeeds speeds, DoubleSupplier maxTurnVelocityRadiansPerSecond) {
+  public void runVelocityWithMaxTurnVelo(ChassisSpeeds speeds, double maxTurnVelocityRadiansPerSecond) {
     
     //limits our requested rotational speed to a maxium velocity before desscretizing to avoid any unintentionalskew
     //simply setting a max cap and not a scale because I dont care how it gets up to this max velo
-    if(speeds.omegaRadiansPerSecond > maxTurnVelocityRadiansPerSecond.getAsDouble()){
-      speeds.omegaRadiansPerSecond = maxTurnVelocityRadiansPerSecond.getAsDouble();
+    if(speeds.omegaRadiansPerSecond > maxTurnVelocityRadiansPerSecond){
+      speeds.omegaRadiansPerSecond = maxTurnVelocityRadiansPerSecond;
     }
     
     ChassisSpeeds discreteSpeeds = ChassisSpeeds.discretize(speeds, 0.02);
@@ -249,13 +261,13 @@ public class Drive extends SubsystemBase {
   }
 
   public void joystickDrive(
-      DoubleSupplier xSupplier, DoubleSupplier ySupplier, DoubleSupplier omegaSupplier) {
+      double xInput, double yInput, double omegaInput) {
     Translation2d linearVelocity =
-        getLinearVelocityFromXY(xSupplier.getAsDouble(), ySupplier.getAsDouble(), Constants.DriveConstants.deadband);
+        getLinearVelocityFromXY(xInput, yInput, Constants.DriveConstants.deadband);
 
     // Apply rotation deadband
     double omega =
-        MathUtil.applyDeadband(omegaSupplier.getAsDouble(), Constants.DriveConstants.deadband);
+        MathUtil.applyDeadband(omegaInput, Constants.DriveConstants.deadband);
 
     // Square rotation value for more precise control
     omega = Math.copySign(omega * omega, omega);
@@ -274,7 +286,7 @@ public class Drive extends SubsystemBase {
             speeds, isFlipped ? getRotation().plus(new Rotation2d(Math.PI)) : getRotation()));
   }
 
-  public void joystickDriveAngleLock(DoubleSupplier xSupplier, DoubleSupplier ySupplier,  Supplier<Rotation2d> rotationSupplier){
+  public void driveAtAngle (double xInput, double yInput,  Rotation2d angle){
      ProfiledPIDController angleController =
         new ProfiledPIDController(
             Constants.DriveConstants.ANGLE_KP,
@@ -282,8 +294,92 @@ public class Drive extends SubsystemBase {
             Constants.DriveConstants.ANGLE_KD,
             new TrapezoidProfile.Constraints(Constants.DriveConstants.ANGLE_MAX_VELOCITY, Constants.DriveConstants.ANGLE_MAX_ACCELERATION));
     angleController.enableContinuousInput(-Math.PI, Math.PI);
-  }
 
+    Translation2d linearVelocity =
+        getLinearVelocityFromXY(xInput, yInput);
+    double omega =
+        angleController.calculate(
+            getRotation().getRadians(), angle.getRadians());
+            ChassisSpeeds speeds =
+            new ChassisSpeeds(
+                linearVelocity.getX() * getMaxLinearSpeed(),
+                linearVelocity.getY() * getMaxLinearSpeed(),
+                omega);
+        boolean isFlipped =
+            DriverStation.getAlliance().isPresent()
+                && DriverStation.getAlliance().get() == Alliance.Red;
+        runVelocity(
+            ChassisSpeeds.fromFieldRelativeSpeeds(
+                speeds,
+                isFlipped
+                    ? getRotation().plus(new Rotation2d(Math.PI))
+                    : getRotation()));
+  }
+  public void driveAtAngle(double xInput, double yInput,  Rotation2d angle, double maxTurnVelo){
+    ProfiledPIDController angleController =
+       new ProfiledPIDController(
+           Constants.DriveConstants.ANGLE_KP,
+           0.0,
+           Constants.DriveConstants.ANGLE_KD,
+           new TrapezoidProfile.Constraints(Constants.DriveConstants.ANGLE_MAX_VELOCITY, Constants.DriveConstants.ANGLE_MAX_ACCELERATION));
+   angleController.enableContinuousInput(-Math.PI, Math.PI);
+
+   Translation2d linearVelocity =
+       getLinearVelocityFromXY(xInput, yInput);
+   double omega =
+       angleController.calculate(
+           getRotation().getRadians(), angle.getRadians());
+           ChassisSpeeds speeds =
+           new ChassisSpeeds(
+               linearVelocity.getX() * getMaxLinearSpeed(),
+               linearVelocity.getY() * getMaxLinearSpeed(),
+               omega);
+       boolean isFlipped =
+           DriverStation.getAlliance().isPresent()
+               && DriverStation.getAlliance().get() == Alliance.Red;
+       runVelocityWithMaxTurnVelo(
+           ChassisSpeeds.fromFieldRelativeSpeeds(
+               speeds,
+               isFlipped
+                   ? getRotation().plus(new Rotation2d(Math.PI))
+                   : getRotation()), maxTurnVelo);
+ }
+  public void driveToPoint(){
+    var translationToDesiredPoint =
+                        driveToPointPose.getTranslation().minus(getPose().getTranslation());
+    var linearDistance = translationToDesiredPoint.getNorm();
+    var frictionConstant = 0.0;
+                if (linearDistance >= Units.inchesToMeters(0.5)) {
+                    frictionConstant = Constants.DriveConstants.driveToPointStaticFrictionConstant * Constants.DriveConstants.maxSpeedMetersPerSec;
+                }
+    var directionOfTravel = translationToDesiredPoint.getAngle();
+    var velocityOutput = 0.0;
+                if (DriverStation.isAutonomous()) {
+                    velocityOutput = Math.min(
+                            Math.abs(autoDriveToPointController.calculate(linearDistance, 0)) + frictionConstant,
+                            maxVelocityOutputForDriveToPoint);
+                } else {
+                    velocityOutput = Math.min(
+                            Math.abs(teleopDriveToPointController.calculate(linearDistance, 0)) + frictionConstant,
+                            maxVelocityOutputForDriveToPoint);
+                }
+      var xComponent = velocityOutput * directionOfTravel.getCos();
+      var yComponent = velocityOutput * directionOfTravel.getSin();
+
+      Logger.recordOutput("Subsystems/Drive/DriveToPoint/xVelocitySetpoint", xComponent);
+      Logger.recordOutput("Subsystems/Drive/DriveToPoint/yVelocitySetpoint", yComponent);
+      Logger.recordOutput("Subsystems/Drive/DriveToPoint/velocityOutput", velocityOutput);
+      Logger.recordOutput("Subsystems/Drive/DriveToPoint/linearDistance", linearDistance);
+      Logger.recordOutput("Subsystems/Drive/DriveToPoint/directionOfTravel", directionOfTravel);
+      Logger.recordOutput("Subsystems/Drive/DriveToPoint/desiredPoint", driveToPointPose);
+      
+      if(Double.isNaN(maxOptionalTurnVeloRadiansPerSec)){
+        driveAtAngle(xComponent, yComponent, driveToPointPose.getRotation());
+      }
+      else{
+        driveAtAngle(xComponent, yComponent, driveToPointPose.getRotation(), maxOptionalTurnVeloRadiansPerSec);
+      }
+  }
   public void runSysID() {
     switch (sysIdtoRun) {
       default:
@@ -430,22 +526,22 @@ public class Drive extends SubsystemBase {
   }
 
   public void setXJoystickInput(double x) {
-    xJoystickInput = () -> x;
+    xJoystickInput = x;
   }
 
   public void setYJoystickInput(double y) {
-    yJoystickInput = () -> y;
+    yJoystickInput = y;
   }
 
   public void setOmegaJoystickInput(double omega) {
-    omegaJoystickInput = () -> omega;
+    omegaJoystickInput = omega;
   }
 
   public void setMaxOptionalTurnVeloRadiansPerSec(double speed){
-    maxOptionalTurnVeloRadiansPerSec = () -> speed;
+    maxOptionalTurnVeloRadiansPerSec =  speed;
   }
 
   public void setAngleLockAngle (Rotation2d radians){
-    driveAtAngleAngle = () -> radians;
+    joystickDriveAtAngleAngle =  radians;
   }
 }
