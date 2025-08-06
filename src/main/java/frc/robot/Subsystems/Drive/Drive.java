@@ -4,6 +4,13 @@ import static edu.wpi.first.units.Units.Volts;
 
 import choreo.trajectory.SwerveSample;
 import choreo.trajectory.Trajectory;
+import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.config.PIDConstants;
+import com.pathplanner.lib.controllers.PPHolonomicDriveController;
+import com.pathplanner.lib.path.PathConstraints;
+import com.pathplanner.lib.path.PathPlannerPath;
+import com.pathplanner.lib.pathfinding.Pathfinding;
+import com.pathplanner.lib.util.PathPlannerLogging;
 import edu.wpi.first.hal.FRCNetComm.tInstances;
 import edu.wpi.first.hal.FRCNetComm.tResourceType;
 import edu.wpi.first.hal.HAL;
@@ -35,24 +42,14 @@ import frc.robot.Subsystems.Drive.Gyro.GyroIOInputsAutoLogged;
 import frc.robot.Subsystems.Drive.Module.*;
 import frc.robot.Subsystems.Drive.Module.Module;
 import frc.robot.Util.LocalADStarAK;
-
 import java.util.Optional;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.DoubleSupplier;
-import java.util.function.Supplier;
-
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 
-import com.pathplanner.lib.auto.AutoBuilder;
-import com.pathplanner.lib.config.PIDConstants;
-import com.pathplanner.lib.controllers.PPHolonomicDriveController;
-import com.pathplanner.lib.pathfinding.Pathfinding;
-import com.pathplanner.lib.util.PathPlannerLogging;
-
 public class Drive extends SubsystemBase {
-  
+
   static final Lock odometryLock = new ReentrantLock();
   private final GyroIO gyroIO;
   private final GyroIOInputsAutoLogged gyroInputs = new GyroIOInputsAutoLogged();
@@ -65,14 +62,18 @@ public class Drive extends SubsystemBase {
       new SwerveDriveKinematics(Constants.DriveConstants.moduleTranslations);
   private Rotation2d rawGyroRotation = new Rotation2d();
 
-  private Trajectory<SwerveSample> desiredChoreoTrajectory;
-  private final Timer choreoTimer = new Timer();
-  private Optional<SwerveSample> choreoSampleToBeApplied;
+  private Pose2d pathOntheFlyPose;
+  private PathConstraints pathConstraintsOnTheFly;
+  private double maxTransSpeedMpsOnTheFly;
+  private double maxTransAccelMpssqOnTheFly;
+  private double maxRotSpeedRadPerSecOnTheFly;
+  private double maxRotAccelRadPerSecSqOnTheFly;
+  private double idealEndVeloOntheFly;
 
-  public double xJoystickInput =  0.0;
-  public double yJoystickInput =  0.0;
-  public double omegaJoystickInput =  0.0;
-  public double maxOptionalTurnVeloRadiansPerSec =  Double.NaN;
+  public double xJoystickInput = 0.0;
+  public double yJoystickInput = 0.0;
+  public double omegaJoystickInput = 0.0;
+  public double maxOptionalTurnVeloRadiansPerSec = Double.NaN;
   public double maxVelocityOutputForDriveToPoint = Units.feetToMeters(10.0);
   public Rotation2d joystickDriveAtAngleAngle = Rotation2d.fromRadians(0.0);
 
@@ -80,16 +81,14 @@ public class Drive extends SubsystemBase {
   private final PIDController teleopDriveToPointController = new PIDController(3.6, 0, 0.1);
   private Pose2d driveToPointPose = new Pose2d();
 
-  private final PIDController choreoXController = new PIDController(7, 0, 0);
-  private final PIDController choreoYController = new PIDController(7, 0, 0);
-  private final PIDController choreoThetaController = new PIDController(7, 0, 0);
+  
 
   public enum WantedState {
     SYS_ID,
     AUTO,
     TELEOP_DRIVE,
     TELEOP_DRIVE_AT_ANGLE,
-    CHOREO_PATH,
+    PATH_ON_THE_FLY,
     DRIVE_TO_POINT,
     IDLE
   }
@@ -99,6 +98,7 @@ public class Drive extends SubsystemBase {
     AUTO,
     TELEOP_DRIVE,
     TELEOP_DRIVE_AT_ANGLE,
+    PATH_ON_THE_FLY,
     CHOREO_PATH,
     DRIVE_TO_POINT,
     IDLE
@@ -165,8 +165,8 @@ public class Drive extends SubsystemBase {
         (targetPose) -> {
           Logger.recordOutput("Odometry/TrajectorySetpoint", targetPose);
         });
-    
-        sysId =
+
+    sysId =
         new SysIdRoutine(
             new SysIdRoutine.Config(
                 null,
@@ -178,7 +178,10 @@ public class Drive extends SubsystemBase {
   }
 
   @Override
-  public void periodic() {}
+  public void periodic() {
+
+
+  }
 
   private SystemState handleStateTransition() {
     return switch (wantedState) {
@@ -186,16 +189,7 @@ public class Drive extends SubsystemBase {
       case AUTO -> SystemState.AUTO;
       case TELEOP_DRIVE -> SystemState.TELEOP_DRIVE;
       case TELEOP_DRIVE_AT_ANGLE -> SystemState.TELEOP_DRIVE_AT_ANGLE;
-      case CHOREO_PATH -> {
-        if (systemState != SystemState.CHOREO_PATH) {
-          choreoTimer.restart();
-          choreoSampleToBeApplied = desiredChoreoTrajectory.sampleAt(choreoTimer.get(), false);
-          yield SystemState.CHOREO_PATH;
-        } else {
-          choreoSampleToBeApplied = desiredChoreoTrajectory.sampleAt(choreoTimer.get(), false);
-          yield SystemState.CHOREO_PATH;
-        }
-      }
+      case PATH_ON_THE_FLY -> SystemState.PATH_ON_THE_FLY;
       case DRIVE_TO_POINT -> SystemState.DRIVE_TO_POINT;
       default -> SystemState.IDLE;
     };
@@ -211,9 +205,13 @@ public class Drive extends SubsystemBase {
         break;
       case TELEOP_DRIVE:
         joystickDrive(xJoystickInput, yJoystickInput, omegaJoystickInput);
+        break;
       case TELEOP_DRIVE_AT_ANGLE:
         driveAtAngle(xJoystickInput, yJoystickInput, joystickDriveAtAngleAngle);
-      case CHOREO_PATH:
+        break;
+      case PATH_ON_THE_FLY:
+        setPathConstraintsOnTheFly();
+        AutoBuilder.pathfindToPose(pathOntheFlyPose, pathConstraintsOnTheFly, idealEndVeloOntheFly);
         break;
       case DRIVE_TO_POINT:
         driveToPoint();
@@ -238,14 +236,16 @@ public class Drive extends SubsystemBase {
     Logger.recordOutput("SwerveStates/SetpointsOptimized", setPointStates);
   }
 
-  public void runVelocityWithMaxTurnVelo(ChassisSpeeds speeds, double maxTurnVelocityRadiansPerSecond) {
-    
-    //limits our requested rotational speed to a maxium velocity before desscretizing to avoid any unintentionalskew
-    //simply setting a max cap and not a scale because I dont care how it gets up to this max velo
-    if(speeds.omegaRadiansPerSecond > maxTurnVelocityRadiansPerSecond){
+  public void runVelocityWithMaxTurnVelo(
+      ChassisSpeeds speeds, double maxTurnVelocityRadiansPerSecond) {
+
+    // limits our requested rotational speed to a maxium velocity before desscretizing to avoid any
+    // unintentionalskew
+    // simply setting a max cap and not a scale because I dont care how it gets up to this max velo
+    if (speeds.omegaRadiansPerSecond > maxTurnVelocityRadiansPerSecond) {
       speeds.omegaRadiansPerSecond = maxTurnVelocityRadiansPerSecond;
     }
-    
+
     ChassisSpeeds discreteSpeeds = ChassisSpeeds.discretize(speeds, 0.02);
     SwerveModuleState[] setPointStates = kinematics.toSwerveModuleStates(discreteSpeeds);
     SwerveDriveKinematics.desaturateWheelSpeeds(
@@ -260,14 +260,12 @@ public class Drive extends SubsystemBase {
     Logger.recordOutput("SwerveStates/SetpointsOptimized", setPointStates);
   }
 
-  public void joystickDrive(
-      double xInput, double yInput, double omegaInput) {
+  public void joystickDrive(double xInput, double yInput, double omegaInput) {
     Translation2d linearVelocity =
         getLinearVelocityFromXY(xInput, yInput, Constants.DriveConstants.deadband);
 
     // Apply rotation deadband
-    double omega =
-        MathUtil.applyDeadband(omegaInput, Constants.DriveConstants.deadband);
+    double omega = MathUtil.applyDeadband(omegaInput, Constants.DriveConstants.deadband);
 
     // Square rotation value for more precise control
     omega = Math.copySign(omega * omega, omega);
@@ -286,100 +284,103 @@ public class Drive extends SubsystemBase {
             speeds, isFlipped ? getRotation().plus(new Rotation2d(Math.PI)) : getRotation()));
   }
 
-  public void driveAtAngle (double xInput, double yInput,  Rotation2d angle){
-     ProfiledPIDController angleController =
+  public void driveAtAngle(double xInput, double yInput, Rotation2d angle) {
+    ProfiledPIDController angleController =
         new ProfiledPIDController(
             Constants.DriveConstants.ANGLE_KP,
             0.0,
             Constants.DriveConstants.ANGLE_KD,
-            new TrapezoidProfile.Constraints(Constants.DriveConstants.ANGLE_MAX_VELOCITY, Constants.DriveConstants.ANGLE_MAX_ACCELERATION));
+            new TrapezoidProfile.Constraints(
+                Constants.DriveConstants.ANGLE_MAX_VELOCITY,
+                Constants.DriveConstants.ANGLE_MAX_ACCELERATION));
     angleController.enableContinuousInput(-Math.PI, Math.PI);
 
-    Translation2d linearVelocity =
-        getLinearVelocityFromXY(xInput, yInput);
-    double omega =
-        angleController.calculate(
-            getRotation().getRadians(), angle.getRadians());
-            ChassisSpeeds speeds =
-            new ChassisSpeeds(
-                linearVelocity.getX() * getMaxLinearSpeed(),
-                linearVelocity.getY() * getMaxLinearSpeed(),
-                omega);
-        boolean isFlipped =
-            DriverStation.getAlliance().isPresent()
-                && DriverStation.getAlliance().get() == Alliance.Red;
-        runVelocity(
-            ChassisSpeeds.fromFieldRelativeSpeeds(
-                speeds,
-                isFlipped
-                    ? getRotation().plus(new Rotation2d(Math.PI))
-                    : getRotation()));
+    Translation2d linearVelocity = getLinearVelocityFromXY(xInput, yInput);
+    double omega = angleController.calculate(getRotation().getRadians(), angle.getRadians());
+    ChassisSpeeds speeds =
+        new ChassisSpeeds(
+            linearVelocity.getX() * getMaxLinearSpeed(),
+            linearVelocity.getY() * getMaxLinearSpeed(),
+            omega);
+    boolean isFlipped =
+        DriverStation.getAlliance().isPresent()
+            && DriverStation.getAlliance().get() == Alliance.Red;
+    runVelocity(
+        ChassisSpeeds.fromFieldRelativeSpeeds(
+            speeds, isFlipped ? getRotation().plus(new Rotation2d(Math.PI)) : getRotation()));
   }
-  public void driveAtAngle(double xInput, double yInput,  Rotation2d angle, double maxTurnVelo){
-    ProfiledPIDController angleController =
-       new ProfiledPIDController(
-           Constants.DriveConstants.ANGLE_KP,
-           0.0,
-           Constants.DriveConstants.ANGLE_KD,
-           new TrapezoidProfile.Constraints(Constants.DriveConstants.ANGLE_MAX_VELOCITY, Constants.DriveConstants.ANGLE_MAX_ACCELERATION));
-   angleController.enableContinuousInput(-Math.PI, Math.PI);
 
-   Translation2d linearVelocity =
-       getLinearVelocityFromXY(xInput, yInput);
-   double omega =
-       angleController.calculate(
-           getRotation().getRadians(), angle.getRadians());
-           ChassisSpeeds speeds =
-           new ChassisSpeeds(
-               linearVelocity.getX() * getMaxLinearSpeed(),
-               linearVelocity.getY() * getMaxLinearSpeed(),
-               omega);
-       boolean isFlipped =
-           DriverStation.getAlliance().isPresent()
-               && DriverStation.getAlliance().get() == Alliance.Red;
-       runVelocityWithMaxTurnVelo(
-           ChassisSpeeds.fromFieldRelativeSpeeds(
-               speeds,
-               isFlipped
-                   ? getRotation().plus(new Rotation2d(Math.PI))
-                   : getRotation()), maxTurnVelo);
- }
-  public void driveToPoint(){
+  public void driveAtAngle(double xInput, double yInput, Rotation2d angle, double maxTurnVelo) {
+    ProfiledPIDController angleController =
+        new ProfiledPIDController(
+            Constants.DriveConstants.ANGLE_KP,
+            0.0,
+            Constants.DriveConstants.ANGLE_KD,
+            new TrapezoidProfile.Constraints(
+                Constants.DriveConstants.ANGLE_MAX_VELOCITY,
+                Constants.DriveConstants.ANGLE_MAX_ACCELERATION));
+    angleController.enableContinuousInput(-Math.PI, Math.PI);
+
+    Translation2d linearVelocity = getLinearVelocityFromXY(xInput, yInput);
+    double omega = angleController.calculate(getRotation().getRadians(), angle.getRadians());
+    ChassisSpeeds speeds =
+        new ChassisSpeeds(
+            linearVelocity.getX() * getMaxLinearSpeed(),
+            linearVelocity.getY() * getMaxLinearSpeed(),
+            omega);
+    boolean isFlipped =
+        DriverStation.getAlliance().isPresent()
+            && DriverStation.getAlliance().get() == Alliance.Red;
+    runVelocityWithMaxTurnVelo(
+        ChassisSpeeds.fromFieldRelativeSpeeds(
+            speeds, isFlipped ? getRotation().plus(new Rotation2d(Math.PI)) : getRotation()),
+        maxTurnVelo);
+  }
+
+  public void driveToPoint() {
     var translationToDesiredPoint =
-                        driveToPointPose.getTranslation().minus(getPose().getTranslation());
+        driveToPointPose.getTranslation().minus(getPose().getTranslation());
     var linearDistance = translationToDesiredPoint.getNorm();
     var frictionConstant = 0.0;
-                if (linearDistance >= Units.inchesToMeters(0.5)) {
-                    frictionConstant = Constants.DriveConstants.driveToPointStaticFrictionConstant * Constants.DriveConstants.maxSpeedMetersPerSec;
-                }
+    if (linearDistance >= Units.inchesToMeters(0.5)) {
+      frictionConstant =
+          Constants.DriveConstants.driveToPointStaticFrictionConstant
+              * Constants.DriveConstants.maxSpeedMetersPerSec;
+    }
     var directionOfTravel = translationToDesiredPoint.getAngle();
     var velocityOutput = 0.0;
-                if (DriverStation.isAutonomous()) {
-                    velocityOutput = Math.min(
-                            Math.abs(autoDriveToPointController.calculate(linearDistance, 0)) + frictionConstant,
-                            maxVelocityOutputForDriveToPoint);
-                } else {
-                    velocityOutput = Math.min(
-                            Math.abs(teleopDriveToPointController.calculate(linearDistance, 0)) + frictionConstant,
-                            maxVelocityOutputForDriveToPoint);
-                }
-      var xComponent = velocityOutput * directionOfTravel.getCos();
-      var yComponent = velocityOutput * directionOfTravel.getSin();
+    if (DriverStation.isAutonomous()) {
+      velocityOutput =
+          Math.min(
+              Math.abs(autoDriveToPointController.calculate(linearDistance, 0)) + frictionConstant,
+              maxVelocityOutputForDriveToPoint);
+    } else {
+      velocityOutput =
+          Math.min(
+              Math.abs(teleopDriveToPointController.calculate(linearDistance, 0))
+                  + frictionConstant,
+              maxVelocityOutputForDriveToPoint);
+    }
+    var xComponent = velocityOutput * directionOfTravel.getCos();
+    var yComponent = velocityOutput * directionOfTravel.getSin();
 
-      Logger.recordOutput("Subsystems/Drive/DriveToPoint/xVelocitySetpoint", xComponent);
-      Logger.recordOutput("Subsystems/Drive/DriveToPoint/yVelocitySetpoint", yComponent);
-      Logger.recordOutput("Subsystems/Drive/DriveToPoint/velocityOutput", velocityOutput);
-      Logger.recordOutput("Subsystems/Drive/DriveToPoint/linearDistance", linearDistance);
-      Logger.recordOutput("Subsystems/Drive/DriveToPoint/directionOfTravel", directionOfTravel);
-      Logger.recordOutput("Subsystems/Drive/DriveToPoint/desiredPoint", driveToPointPose);
-      
-      if(Double.isNaN(maxOptionalTurnVeloRadiansPerSec)){
-        driveAtAngle(xComponent, yComponent, driveToPointPose.getRotation());
-      }
-      else{
-        driveAtAngle(xComponent, yComponent, driveToPointPose.getRotation(), maxOptionalTurnVeloRadiansPerSec);
-      }
+    Logger.recordOutput("Subsystems/Drive/DriveToPoint/xVelocitySetpoint", xComponent);
+    Logger.recordOutput("Subsystems/Drive/DriveToPoint/yVelocitySetpoint", yComponent);
+    Logger.recordOutput("Subsystems/Drive/DriveToPoint/velocityOutput", velocityOutput);
+    Logger.recordOutput("Subsystems/Drive/DriveToPoint/linearDistance", linearDistance);
+    Logger.recordOutput("Subsystems/Drive/DriveToPoint/directionOfTravel", directionOfTravel);
+    Logger.recordOutput("Subsystems/Drive/DriveToPoint/desiredPoint", driveToPointPose);
+
+    if (Double.isNaN(maxOptionalTurnVeloRadiansPerSec)) {
+      driveAtAngle(xComponent, yComponent, driveToPointPose.getRotation());
+    } else {
+      driveAtAngle(
+          xComponent, yComponent, driveToPointPose.getRotation(), maxOptionalTurnVeloRadiansPerSec);
+    }
   }
+
+
+
   public void runSysID() {
     switch (sysIdtoRun) {
       default:
@@ -537,11 +538,39 @@ public class Drive extends SubsystemBase {
     omegaJoystickInput = omega;
   }
 
-  public void setMaxOptionalTurnVeloRadiansPerSec(double speed){
-    maxOptionalTurnVeloRadiansPerSec =  speed;
+  public void setMaxOptionalTurnVeloRadiansPerSec(double speed) {
+    maxOptionalTurnVeloRadiansPerSec = speed;
   }
 
-  public void setAngleLockAngle (Rotation2d radians){
-    joystickDriveAtAngleAngle =  radians;
+  public void setAngleLockAngle(Rotation2d radians) {
+    joystickDriveAtAngleAngle = radians;
+  }
+
+  public void setPathOntheFlyPose(Pose2d pose){
+    pathOntheFlyPose = pose;
+  }
+
+  public void setMaxTransSpeedOnTheFly(double speed){
+    maxTransSpeedMpsOnTheFly = speed;
+  }
+
+  public void setMaxTransAccelOnTheFly(double speed){
+    maxTransAccelMpssqOnTheFly = speed;
+  }
+
+  public void setMaxRotSpeedOnTheFly(double speed){
+    maxRotSpeedRadPerSecOnTheFly = speed;
+  }
+
+  public void setMaxRotAccelOnTheFly(double speed){
+    maxRotAccelRadPerSecSqOnTheFly = speed;
+  }
+
+  public void setIdealEndVeloOntheFly(double speed){
+    idealEndVeloOntheFly = speed;
+  }
+
+  public void setPathConstraintsOnTheFly(){
+    pathConstraintsOnTheFly = new PathConstraints(maxTransSpeedMpsOnTheFly, maxTransAccelMpssqOnTheFly, maxRotSpeedRadPerSecOnTheFly, maxRotAccelRadPerSecSqOnTheFly);
   }
 }
