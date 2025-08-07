@@ -2,13 +2,10 @@ package frc.robot.Subsystems.Drive;
 
 import static edu.wpi.first.units.Units.Volts;
 
-import choreo.trajectory.SwerveSample;
-import choreo.trajectory.Trajectory;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.config.PIDConstants;
 import com.pathplanner.lib.controllers.PPHolonomicDriveController;
 import com.pathplanner.lib.path.PathConstraints;
-import com.pathplanner.lib.path.PathPlannerPath;
 import com.pathplanner.lib.pathfinding.Pathfinding;
 import com.pathplanner.lib.util.PathPlannerLogging;
 import edu.wpi.first.hal.FRCNetComm.tInstances;
@@ -22,6 +19,7 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.geometry.Twist2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
@@ -32,17 +30,16 @@ import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
-import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.Constants;
+import frc.robot.Constants.Mode;
 import frc.robot.Subsystems.Drive.Gyro.GyroIO;
 import frc.robot.Subsystems.Drive.Gyro.GyroIOInputsAutoLogged;
 import frc.robot.Subsystems.Drive.Module.*;
 import frc.robot.Subsystems.Drive.Module.Module;
 import frc.robot.Util.LocalADStarAK;
-import java.util.Optional;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import org.littletonrobotics.junction.AutoLogOutput;
@@ -81,7 +78,7 @@ public class Drive extends SubsystemBase {
   private final PIDController teleopDriveToPointController = new PIDController(3.6, 0, 0.1);
   private Pose2d driveToPointPose = new Pose2d();
 
-  
+  public static final double goToPoseTranslationError = Units.inchesToMeters(0.5);
 
   public enum WantedState {
     SYS_ID,
@@ -99,7 +96,6 @@ public class Drive extends SubsystemBase {
     TELEOP_DRIVE,
     TELEOP_DRIVE_AT_ANGLE,
     PATH_ON_THE_FLY,
-    CHOREO_PATH,
     DRIVE_TO_POINT,
     IDLE
   }
@@ -179,8 +175,55 @@ public class Drive extends SubsystemBase {
 
   @Override
   public void periodic() {
+    odometryLock.lock();
+    gyroIO.updateInputs(gyroInputs);
+    Logger.processInputs("Drive/Gyro", gyroInputs);
+    for (var module : modules) {
+      module.periodic();
+    }
+    odometryLock.unlock();
 
+    if (DriverStation.isDisabled()) {
+      for (var module : modules) {
+        module.stop();
+      }
+      Logger.recordOutput("SwerveStates/Setpoints", new SwerveModuleState[] {});
+      Logger.recordOutput("SwerveStates/SetpointsOptimized", new SwerveModuleState[] {});
+    }
 
+    double[] sampleTimestamps = modules[0].getOdometryTimestamps();
+    int sampleCount = sampleTimestamps.length;
+    for (int i = 0; i < sampleCount; i++) {
+      SwerveModulePosition[] modulePositions = new SwerveModulePosition[4];
+      SwerveModulePosition[] moduleDeltas = new SwerveModulePosition[4];
+      for (int moduleIndex = 0; moduleIndex < 4; moduleIndex++) {
+        modulePositions[moduleIndex] = modules[moduleIndex].getOdometryPositions()[i];
+        moduleDeltas[moduleIndex] =
+            new SwerveModulePosition(
+                modulePositions[moduleIndex].distanceMeters
+                    - lastModulePos[moduleIndex].distanceMeters,
+                modulePositions[moduleIndex].angle);
+        lastModulePos[moduleIndex] = modulePositions[moduleIndex];
+      }
+      if (gyroInputs.connected) {
+        rawGyroRotation = gyroInputs.odometryYawPositions[i];
+      } else {
+        Twist2d twist = kinematics.toTwist2d(moduleDeltas);
+        rawGyroRotation = rawGyroRotation.plus(new Rotation2d(twist.dtheta));
+      }
+
+      poseEstimator.updateWithTime(sampleTimestamps[i], rawGyroRotation, modulePositions);
+    }
+
+    systemState = handleStateTransition();
+
+    Logger.recordOutput("Subsystems/Drive/SystemState", systemState);
+    Logger.recordOutput("Subsystems/Drive/DesiredState", wantedState);
+
+    applyStates();
+    cancelIfNearAndReturnTrue();
+
+    gyroDCAlert.set(!gyroInputs.connected && Constants.currentMode != Mode.SIM);
   }
 
   private SystemState handleStateTransition() {
@@ -379,7 +422,44 @@ public class Drive extends SubsystemBase {
     }
   }
 
+  public boolean cancelIfNearAndReturnTrue() {
+    if ((systemState == systemState.PATH_ON_THE_FLY && !DriverStation.isAutonomous())) {
+      var distance = pathOntheFlyPose.getTranslation().minus(getPose().getTranslation()).getNorm();
 
+      Logger.recordOutput("Subsystems/Drive/PathOnFlyTeleOp/distanceFromEndpoint", distance);
+
+      if (MathUtil.isNear(0.0, distance, goToPoseTranslationError)) {
+        setWantedState(wantedState.TELEOP_DRIVE);
+        return true;
+      } else {
+        return false;
+      }
+    } else if ((systemState == systemState.DRIVE_TO_POINT && !DriverStation.isAutonomous())) {
+      var distance = driveToPointPose.getTranslation().minus(getPose().getTranslation()).getNorm();
+
+      Logger.recordOutput("Subsystems/Drive/DriveToPoint/distanceFromEndpoint", distance);
+
+      if (MathUtil.isNear(0.0, distance, goToPoseTranslationError)) {
+        setWantedState(wantedState.TELEOP_DRIVE);
+        return true;
+      } else {
+        return false;
+      }
+    } else if ((systemState == systemState.DRIVE_TO_POINT && DriverStation.isAutonomous())) {
+      var distance = driveToPointPose.getTranslation().minus(getPose().getTranslation()).getNorm();
+
+      Logger.recordOutput("Subsystems/Drive/DriveToPoint/distanceFromEndpoint", distance);
+
+      if (MathUtil.isNear(0.0, distance, goToPoseTranslationError)) {
+        setWantedState(wantedState.AUTO);
+        return true;
+      } else {
+        return false;
+      }
+    } else {
+      return false;
+    }
+  }
 
   public void runSysID() {
     switch (sysIdtoRun) {
@@ -526,6 +606,10 @@ public class Drive extends SubsystemBase {
     return Constants.DriveConstants.maxSpeedMetersPerSec / Constants.DriveConstants.driveBaseRadius;
   }
 
+  public void setWantedState(WantedState wantedState) {
+    this.wantedState = wantedState;
+  }
+
   public void setXJoystickInput(double x) {
     xJoystickInput = x;
   }
@@ -546,31 +630,36 @@ public class Drive extends SubsystemBase {
     joystickDriveAtAngleAngle = radians;
   }
 
-  public void setPathOntheFlyPose(Pose2d pose){
+  public void setPathOntheFlyPose(Pose2d pose) {
     pathOntheFlyPose = pose;
   }
 
-  public void setMaxTransSpeedOnTheFly(double speed){
+  public void setMaxTransSpeedOnTheFly(double speed) {
     maxTransSpeedMpsOnTheFly = speed;
   }
 
-  public void setMaxTransAccelOnTheFly(double speed){
+  public void setMaxTransAccelOnTheFly(double speed) {
     maxTransAccelMpssqOnTheFly = speed;
   }
 
-  public void setMaxRotSpeedOnTheFly(double speed){
+  public void setMaxRotSpeedOnTheFly(double speed) {
     maxRotSpeedRadPerSecOnTheFly = speed;
   }
 
-  public void setMaxRotAccelOnTheFly(double speed){
+  public void setMaxRotAccelOnTheFly(double speed) {
     maxRotAccelRadPerSecSqOnTheFly = speed;
   }
 
-  public void setIdealEndVeloOntheFly(double speed){
+  public void setIdealEndVeloOntheFly(double speed) {
     idealEndVeloOntheFly = speed;
   }
 
-  public void setPathConstraintsOnTheFly(){
-    pathConstraintsOnTheFly = new PathConstraints(maxTransSpeedMpsOnTheFly, maxTransAccelMpssqOnTheFly, maxRotSpeedRadPerSecOnTheFly, maxRotAccelRadPerSecSqOnTheFly);
+  public void setPathConstraintsOnTheFly() {
+    pathConstraintsOnTheFly =
+        new PathConstraints(
+            maxTransSpeedMpsOnTheFly,
+            maxTransAccelMpssqOnTheFly,
+            maxRotSpeedRadPerSecOnTheFly,
+            maxRotAccelRadPerSecSqOnTheFly);
   }
 }
