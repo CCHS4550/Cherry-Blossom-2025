@@ -256,14 +256,4 @@ public class ModuleIOSpark implements ModuleIO {
             Constants.DriveConstants.turnPIDMaxInput);
     turnController.setReference(setPoint, ControlType.kPosition);
   }
-
-  @Override
-  public void setTurnPosWithLimitedVelo(Rotation2d rotation) {
-    double setPoint =
-        MathUtil.inputModulus(
-            rotation.plus(rotationOffset).getRadians(),
-            Constants.DriveConstants.turnPIDMinInput,
-            Constants.DriveConstants.turnPIDMaxInput);
-    turnController.setReference(setPoint, ControlType.kPosition, ClosedLoopSlot.kSlot1);
-  }
 }

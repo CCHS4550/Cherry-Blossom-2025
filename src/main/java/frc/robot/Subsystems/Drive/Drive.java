@@ -42,6 +42,8 @@ import frc.robot.Subsystems.Drive.Module.Module;
 import frc.robot.Util.LocalADStarAK;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.BooleanSupplier;
+
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 
@@ -80,6 +82,9 @@ public class Drive extends SubsystemBase {
 
   public static final double goToPoseTranslationError = Units.inchesToMeters(0.5);
 
+  private boolean isRunningCommand = false;
+  public BooleanSupplier shouldCancelEarly = () -> false;
+  
   public enum WantedState {
     SYS_ID,
     AUTO,
@@ -220,8 +225,9 @@ public class Drive extends SubsystemBase {
     Logger.recordOutput("Subsystems/Drive/SystemState", systemState);
     Logger.recordOutput("Subsystems/Drive/DesiredState", wantedState);
 
+    isRunningCommand = cancelIfNearAndReturnFalse();
+    
     applyStates();
-    cancelIfNearAndReturnTrue();
 
     gyroDCAlert.set(!gyroInputs.connected && Constants.currentMode != Mode.SIM);
   }
@@ -232,7 +238,14 @@ public class Drive extends SubsystemBase {
       case AUTO -> SystemState.AUTO;
       case TELEOP_DRIVE -> SystemState.TELEOP_DRIVE;
       case TELEOP_DRIVE_AT_ANGLE -> SystemState.TELEOP_DRIVE_AT_ANGLE;
-      case PATH_ON_THE_FLY -> SystemState.PATH_ON_THE_FLY;
+      case PATH_ON_THE_FLY -> {
+        if(!isRunningCommand){
+          yield SystemState.PATH_ON_THE_FLY;
+        }
+        else{
+          yield SystemState.TELEOP_DRIVE;
+        }
+      }
       case DRIVE_TO_POINT -> SystemState.DRIVE_TO_POINT;
       default -> SystemState.IDLE;
     };
@@ -253,8 +266,11 @@ public class Drive extends SubsystemBase {
         driveAtAngle(xJoystickInput, yJoystickInput, joystickDriveAtAngleAngle);
         break;
       case PATH_ON_THE_FLY:
-        setPathConstraintsOnTheFly();
-        AutoBuilder.pathfindToPose(pathOntheFlyPose, pathConstraintsOnTheFly, idealEndVeloOntheFly);
+        if(!isRunningCommand){
+          setPathConstraintsOnTheFly();
+          isRunningCommand = true;
+          AutoBuilder.pathfindToPose(pathOntheFlyPose, pathConstraintsOnTheFly, idealEndVeloOntheFly).until(shouldCancelEarly);
+        }
         break;
       case DRIVE_TO_POINT:
         driveToPoint();
@@ -422,42 +438,42 @@ public class Drive extends SubsystemBase {
     }
   }
 
-  public boolean cancelIfNearAndReturnTrue() {
-    if ((systemState == systemState.PATH_ON_THE_FLY && !DriverStation.isAutonomous())) {
+  public boolean cancelIfNearAndReturnFalse() {
+    if ((systemState == SystemState.PATH_ON_THE_FLY && !DriverStation.isAutonomous())) {
       var distance = pathOntheFlyPose.getTranslation().minus(getPose().getTranslation()).getNorm();
 
       Logger.recordOutput("Subsystems/Drive/PathOnFlyTeleOp/distanceFromEndpoint", distance);
 
       if (MathUtil.isNear(0.0, distance, goToPoseTranslationError)) {
-        setWantedState(wantedState.TELEOP_DRIVE);
-        return true;
-      } else {
+        setWantedState(WantedState.TELEOP_DRIVE);
         return false;
+      } else {
+        return true;
       }
-    } else if ((systemState == systemState.DRIVE_TO_POINT && !DriverStation.isAutonomous())) {
+    } else if ((systemState == SystemState.DRIVE_TO_POINT && !DriverStation.isAutonomous())) {
       var distance = driveToPointPose.getTranslation().minus(getPose().getTranslation()).getNorm();
 
-      Logger.recordOutput("Subsystems/Drive/DriveToPoint/distanceFromEndpoint", distance);
+      Logger.recordOutput("Subsystems/Drive/DriveToPointTeleOp/distanceFromEndpoint", distance);
 
       if (MathUtil.isNear(0.0, distance, goToPoseTranslationError)) {
-        setWantedState(wantedState.TELEOP_DRIVE);
-        return true;
-      } else {
+        setWantedState(WantedState.TELEOP_DRIVE);
         return false;
+      } else {
+        return true;
       }
-    } else if ((systemState == systemState.DRIVE_TO_POINT && DriverStation.isAutonomous())) {
+    } else if ((systemState == SystemState.DRIVE_TO_POINT && DriverStation.isAutonomous())) {
       var distance = driveToPointPose.getTranslation().minus(getPose().getTranslation()).getNorm();
 
-      Logger.recordOutput("Subsystems/Drive/DriveToPoint/distanceFromEndpoint", distance);
+      Logger.recordOutput("Subsystems/Drive/DriveToPointAuto/distanceFromEndpoint", distance);
 
       if (MathUtil.isNear(0.0, distance, goToPoseTranslationError)) {
-        setWantedState(wantedState.AUTO);
-        return true;
-      } else {
+        setWantedState(WantedState.AUTO);
         return false;
+      } else {
+        return true;
       }
     } else {
-      return false;
+      return true;
     }
   }
 
@@ -661,5 +677,9 @@ public class Drive extends SubsystemBase {
             maxTransAccelMpssqOnTheFly,
             maxRotSpeedRadPerSecOnTheFly,
             maxRotAccelRadPerSecSqOnTheFly);
+  }
+
+  public void setEarlyCancel(boolean should){
+    shouldCancelEarly = () -> should;
   }
 }

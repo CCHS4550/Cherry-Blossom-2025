@@ -12,7 +12,7 @@ public class Module {
   private final ModuleIO io;
   private final ModuleIOInputsAutoLogged inputs = new ModuleIOInputsAutoLogged();
   private final int index;
-
+  
   private final Alert driveDCAlert;
   private final Alert turnDCAlert;
   private SwerveModulePosition[] odometryPositions = new SwerveModulePosition[] {};
@@ -52,14 +52,6 @@ public class Module {
 
     io.setDriveVelo(state.speedMetersPerSecond / Constants.DriveConstants.wheelRadiusMeters);
     io.setTurnPos(state.angle);
-  }
-
-  public void runSwerveStateWithLimitedMaxTurnVelo(SwerveModuleState state) {
-    state.optimize(getAngle());
-    state.cosineScale(inputs.turnPosition);
-
-    io.setDriveVelo(state.speedMetersPerSecond / Constants.DriveConstants.wheelRadiusMeters);
-    io.setTurnPosWithLimitedVelo(state.angle);
   }
 
   public void runCharacterization(double output) {

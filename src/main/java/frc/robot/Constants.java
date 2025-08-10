@@ -163,4 +163,28 @@ public final class Constants {
                 1),
             moduleTranslations);
   }
+
+  public final class PneumaticConstants {
+    public static final int compressorCanID = 9999;
+    public static final boolean compressorInverted = false;
+
+    public static final int compressorFanPort = 999;
+
+    public static final int pressureSealForward = 9;
+    public static final int pressureSealBackward = 10;
+
+    public static final int shootingSeal = 8;
+
+    public static double maxPSI = 100.0;
+    
+  }
+
+  public final class MechanismConstants{
+    public static final int rotationCanID = 999;
+    public static final boolean rotationInverted = false;
+    public static final boolean rotationEncoderInverted = false;
+    public static final int rotationCurrentLimit = 999;
+    public static final double rotationEncoderPositionFactor = 0;
+    public static final double rotationEncoderVeloFactor = 0;
+  }
 }
