@@ -176,15 +176,16 @@ public final class Constants {
     public static final int shootingSeal = 8;
 
     public static double maxPSI = 100.0;
-    
   }
 
-  public final class MechanismConstants{
+  public final class MechanismConstants {
     public static final int rotationCanID = 999;
     public static final boolean rotationInverted = false;
     public static final boolean rotationEncoderInverted = false;
     public static final int rotationCurrentLimit = 999;
     public static final double rotationEncoderPositionFactor = 0;
     public static final double rotationEncoderVeloFactor = 0;
+    public static final double rotationKp = 0;
+    public static final double rotationKd = 0;
   }
 }

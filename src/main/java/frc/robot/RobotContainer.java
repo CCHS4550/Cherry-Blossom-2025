@@ -1,9 +1,6 @@
 package frc.robot;
 
-import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
-
 import com.pathplanner.lib.auto.AutoBuilder;
-
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.ControlSchemes.DriveScheme;
@@ -12,6 +9,7 @@ import frc.robot.Subsystems.Drive.Gyro.GyroIO;
 import frc.robot.Subsystems.Drive.Gyro.GyroPigeon;
 import frc.robot.Subsystems.Drive.Module.ModuleIO;
 import frc.robot.Subsystems.Drive.Module.ModuleIOSpark;
+import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
 public class RobotContainer {
   private final Drive drive;
@@ -59,8 +57,6 @@ public class RobotContainer {
     }
 
     autoChooser = new LoggedDashboardChooser<>("Auto Choices", AutoBuilder.buildAutoChooser());
-
-    
   }
 
   public Command getAutonomousCommand() {

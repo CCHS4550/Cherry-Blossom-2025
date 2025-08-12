@@ -43,7 +43,6 @@ import frc.robot.Util.LocalADStarAK;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BooleanSupplier;
-
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 
@@ -84,7 +83,7 @@ public class Drive extends SubsystemBase {
 
   private boolean isRunningCommand = false;
   public BooleanSupplier shouldCancelEarly = () -> false;
-  
+
   public enum WantedState {
     SYS_ID,
     AUTO,
@@ -226,7 +225,7 @@ public class Drive extends SubsystemBase {
     Logger.recordOutput("Subsystems/Drive/DesiredState", wantedState);
 
     isRunningCommand = cancelIfNearAndReturnFalse();
-    
+
     applyStates();
 
     gyroDCAlert.set(!gyroInputs.connected && Constants.currentMode != Mode.SIM);
@@ -239,10 +238,9 @@ public class Drive extends SubsystemBase {
       case TELEOP_DRIVE -> SystemState.TELEOP_DRIVE;
       case TELEOP_DRIVE_AT_ANGLE -> SystemState.TELEOP_DRIVE_AT_ANGLE;
       case PATH_ON_THE_FLY -> {
-        if(!isRunningCommand){
+        if (!isRunningCommand) {
           yield SystemState.PATH_ON_THE_FLY;
-        }
-        else{
+        } else {
           yield SystemState.TELEOP_DRIVE;
         }
       }
@@ -266,10 +264,12 @@ public class Drive extends SubsystemBase {
         driveAtAngle(xJoystickInput, yJoystickInput, joystickDriveAtAngleAngle);
         break;
       case PATH_ON_THE_FLY:
-        if(!isRunningCommand){
+        if (!isRunningCommand) {
           setPathConstraintsOnTheFly();
           isRunningCommand = true;
-          AutoBuilder.pathfindToPose(pathOntheFlyPose, pathConstraintsOnTheFly, idealEndVeloOntheFly).until(shouldCancelEarly);
+          AutoBuilder.pathfindToPose(
+                  pathOntheFlyPose, pathConstraintsOnTheFly, idealEndVeloOntheFly)
+              .until(shouldCancelEarly);
         }
         break;
       case DRIVE_TO_POINT:
@@ -608,6 +608,10 @@ public class Drive extends SubsystemBase {
     return getPose().getRotation();
   }
 
+  public double getYawVelocity() {
+    return gyroInputs.yawVelocityRadPerSec;
+  }
+
   public void setPose(Pose2d pose) {
     poseEstimator.resetPosition(rawGyroRotation, getModulePositions(), pose);
   }
@@ -679,7 +683,7 @@ public class Drive extends SubsystemBase {
             maxRotAccelRadPerSecSqOnTheFly);
   }
 
-  public void setEarlyCancel(boolean should){
+  public void setEarlyCancel(boolean should) {
     shouldCancelEarly = () -> should;
   }
 }

@@ -174,7 +174,7 @@ public class ModuleIOSpark implements ModuleIO {
         () ->
             driveSpark.configure(
                 driveConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters));
-    SparkUtil.makeItWork(
+    makeItWork(
         driveSpark,
         5,
         () -> driveEncoder.setPosition(0.0)); // reset the sparkmax encoder b/c its not absolute
