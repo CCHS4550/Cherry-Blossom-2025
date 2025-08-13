@@ -86,16 +86,6 @@ public class ModuleIOSpark implements ModuleIO {
       case 3 -> turnConfig.inverted(Constants.DriveConstants.backRightTurnInverted);
       default -> turnConfig.inverted(false);
     }
-    switch (module) {
-      case 0 -> turnConfig.absoluteEncoder.inverted(
-          Constants.DriveConstants.frontLeftTurnEncoderInverted);
-      case 1 -> turnConfig.absoluteEncoder.inverted(
-          Constants.DriveConstants.frontRightTurnEncoderInverted);
-      case 2 -> turnConfig.absoluteEncoder.inverted(
-          Constants.DriveConstants.backLeftTurnEncoderInverted);
-      case 3 -> turnConfig.absoluteEncoder.inverted(
-          Constants.DriveConstants.backRightTurnEncoderInverted);
-    }
     turnConfig
         .idleMode(IdleMode.kBrake)
         .smartCurrentLimit(Constants.DriveConstants.turnMotorCurrentLimit)
@@ -135,15 +125,6 @@ public class ModuleIOSpark implements ModuleIO {
       case 2 -> driveConfig.inverted(Constants.DriveConstants.backLeftDriveInverted);
       case 3 -> driveConfig.inverted(Constants.DriveConstants.backRightDriveInverted);
       default -> driveConfig.inverted(false);
-    }
-    switch (module) {
-      case 0 -> driveConfig.encoder.inverted(
-          Constants.DriveConstants.frontLeftDriveEncoderInverted);
-      case 1 -> driveConfig.encoder.inverted(
-          Constants.DriveConstants.frontRightDriveEncoderInverted);
-      case 2 -> driveConfig.encoder.inverted(Constants.DriveConstants.backLeftDriveEncoderInverted);
-      case 3 -> driveConfig.encoder.inverted(
-          Constants.DriveConstants.backRightDriveEncoderInverted);
     }
     driveConfig
         .idleMode(IdleMode.kBrake)

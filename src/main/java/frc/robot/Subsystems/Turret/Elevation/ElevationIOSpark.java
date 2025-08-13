@@ -45,7 +45,6 @@ public class ElevationIOSpark implements ElevationIO {
 
     var elevationConfig = new SparkMaxConfig();
     elevationConfig.inverted(Constants.MechanismConstants.elevationInverted);
-    elevationConfig.encoder.inverted(Constants.MechanismConstants.elevationEncoderInverted);
     elevationConfig
         .idleMode(IdleMode.kBrake)
         .smartCurrentLimit(Constants.MechanismConstants.elevationCurrentLimit)
@@ -83,7 +82,6 @@ public class ElevationIOSpark implements ElevationIO {
 
     var elevationTwoConfig = new SparkMaxConfig();
     elevationTwoConfig.inverted(Constants.MechanismConstants.elevationTwoInverted);
-    elevationTwoConfig.encoder.inverted(Constants.MechanismConstants.elevationEncoderTwoInverted);
     elevationTwoConfig.follow(elevationSpark);
     elevationTwoConfig
         .idleMode(IdleMode.kBrake)

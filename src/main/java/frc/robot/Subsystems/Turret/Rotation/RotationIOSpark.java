@@ -36,7 +36,6 @@ public class RotationIOSpark implements RotationIO {
 
     var rotationConfig = new SparkMaxConfig();
     rotationConfig.inverted(Constants.MechanismConstants.rotationInverted);
-    rotationConfig.encoder.inverted(Constants.MechanismConstants.rotationEncoderInverted);
     rotationConfig
         .idleMode(IdleMode.kBrake)
         .smartCurrentLimit(Constants.MechanismConstants.rotationCurrentLimit)
