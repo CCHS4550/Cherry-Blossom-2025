@@ -7,6 +7,7 @@ import static frc.robot.Util.SparkUtil.makeItWork;
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.spark.ClosedLoopSlot;
 import com.revrobotics.spark.SparkBase;
+import com.revrobotics.spark.SparkBase.ControlType;
 import com.revrobotics.spark.SparkBase.PersistMode;
 import com.revrobotics.spark.SparkBase.ResetMode;
 import com.revrobotics.spark.SparkClosedLoopController;
@@ -14,7 +15,6 @@ import com.revrobotics.spark.SparkClosedLoopController.ArbFFUnits;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
 import com.revrobotics.spark.SparkMax;
 import com.revrobotics.spark.config.ClosedLoopConfig.FeedbackSensor;
-import com.revrobotics.spark.config.MAXMotionConfig.MAXMotionPositionMode;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 import com.revrobotics.spark.config.SparkMaxConfig;
 import edu.wpi.first.math.filter.Debouncer;
@@ -53,11 +53,7 @@ public class RotationIOSpark implements RotationIO {
         .positionWrappingEnabled(true)
         .positionWrappingInputRange(0, Math.PI * 2)
         .pidf(
-            Constants.MechanismConstants.rotationKp, 0, Constants.MechanismConstants.rotationKd, 0)
-        .maxMotion
-        .positionMode(MAXMotionPositionMode.kMAXMotionTrapezoidal)
-        .maxVelocity(0.0)
-        .maxAcceleration(0.0);
+            Constants.MechanismConstants.rotationKp, 0, Constants.MechanismConstants.rotationKd, 0);
     rotationConfig
         .signals
         .primaryEncoderPositionAlwaysOn(true)
@@ -110,7 +106,7 @@ public class RotationIOSpark implements RotationIO {
   public void setRotationPos(Rotation2d angle, double arbFF) {
     rotationController.setReference(
         angle.getRadians(),
-        SparkBase.ControlType.kMAXMotionPositionControl,
+        ControlType.kPosition,
         ClosedLoopSlot.kSlot0,
         arbFF,
         ArbFFUnits.kVoltage);

@@ -187,5 +187,18 @@ public final class Constants {
     public static final double rotationEncoderVeloFactor = 0;
     public static final double rotationKp = 0;
     public static final double rotationKd = 0;
+    public static final int elevationCanID = 0;
+    public static final boolean elevationInverted = false;
+    public static final boolean elevationEncoderInverted = false;
+    public static final int elevationCurrentLimit = 0;
+    public static final double elevationEncoderPositionFactor = 0;
+    public static final double elevationEncoderVeloFactor = 0;
+    public static final double elevationKp = 0;
+    public static final double elevationKd = 0;
+    public static final int elevationCanIDTwo = 0;
+    public static final boolean elevationTwoInverted = false;
+    public static final boolean elevationEncoderTwoInverted = false;
+    public static final int elevationTwoCurrentLimit = 0;
+    public static final int elevationLimitSwitchID = 0;
   }
 }

@@ -51,6 +51,8 @@ public class Pneumatics extends SubsystemBase {
 
   @Override
   public void periodic() {
+    io.updateInputs(inputs);
+
     if (DriverStation.isDisabled()) {
       io.disablePressureSeal();
       io.setCompressor(0.0);

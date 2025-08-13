@@ -499,7 +499,7 @@ public class Drive extends SubsystemBase {
         sysIdDynamic(SysIdRoutine.Direction.kForward);
         break;
       case DYNAMIC_REVERSE:
-        sysIdDynamic(SysIdRoutine.Direction.kForward);
+        sysIdDynamic(SysIdRoutine.Direction.kReverse);
         break;
     }
   }

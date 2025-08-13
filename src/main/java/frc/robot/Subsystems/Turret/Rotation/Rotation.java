@@ -2,6 +2,9 @@ package frc.robot.Subsystems.Turret.Rotation;
 
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.trajectory.TrapezoidProfile;
+import edu.wpi.first.math.trajectory.TrapezoidProfile.Constraints;
+import edu.wpi.first.math.trajectory.TrapezoidProfile.State;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
@@ -10,12 +13,16 @@ public class Rotation extends SubsystemBase {
 
   private final RotationIOInputsAutoLogged inputs = new RotationIOInputsAutoLogged();
 
-  private SimpleMotorFeedforward veloCompensationFF = new SimpleMotorFeedforward(0, 0, 0);
-
   public double manualControlVoltage = 3;
   public Rotation2d rotationRadiansBotOriented;
   public Rotation2d robotOrientation;
   public double robotYawVelo;
+
+  private SimpleMotorFeedforward veloFF = new SimpleMotorFeedforward(0, 0, 0);
+  private TrapezoidProfile.Constraints constraints = new Constraints(0, 0);
+  private TrapezoidProfile profile = new TrapezoidProfile(constraints);
+  private TrapezoidProfile.State state = new State();
+  private TrapezoidProfile.State goal = new State();
 
   public enum wantedState {
     CHARACTERIZATION, // not going to code this part b/c pid constants already found and there's
@@ -44,6 +51,8 @@ public class Rotation extends SubsystemBase {
 
   @Override
   public void periodic() {
+    io.updateInputs(inputs);
+
     if (DriverStation.isDisabled()) {
       setWantedState(
           wantedState.IDLE); // this many set to 0 funcs is redundant but better safe than sorry
@@ -56,6 +65,10 @@ public class Rotation extends SubsystemBase {
   }
 
   public systemState handleStateTransitions() {
+    if (WantedState != wantedState.ROBOT_ORIENTED_ANGLE
+        || WantedState != wantedState.FIELD_ORIENTED_ANGLE) {
+      state = new State(inputs.rotationPositionRad, inputs.rotationVelocityRadPerSec);
+    }
     return switch (WantedState) {
       case CHARACTERIZATION -> systemState.CHARACTERIZATION;
       case MANUAL -> systemState.MANUAL;
@@ -87,8 +100,18 @@ public class Rotation extends SubsystemBase {
   public void runRobotAdjustedAngle() {
     Rotation2d adjustedAngle = rotationRadiansBotOriented.minus(robotOrientation);
     adjustedAngle = optimizeAngle(adjustedAngle);
-    double arbFF = veloCompensationFF.calculate(-robotYawVelo);
+    goal = new State(rotationRadiansBotOriented.getRadians() - robotOrientation.getRadians(), 0);
+    goal = new State(optimizeAngle(Rotation2d.fromRadians(goal.position)).getRadians(), 0);
+    state = profile.calculate(0.02, state, goal);
+    double arbFF = veloFF.calculate(state.velocity - robotYawVelo);
     io.setRotationPos(adjustedAngle, arbFF);
+  }
+
+  public void runNonAdjustedAngle() {
+    Rotation2d optomizedAngle = optimizeAngle(rotationRadiansBotOriented);
+    state = profile.calculate(0.02, state, goal);
+    double arbFF = veloFF.calculate(state.velocity);
+    io.setRotationPos(optomizedAngle, arbFF);
   }
 
   public void setWantedState(wantedState wanted) {
@@ -117,5 +140,10 @@ public class Rotation extends SubsystemBase {
 
   public void setRobotVelo(double velo) {
     robotYawVelo = velo;
+  }
+
+  public void beginTrapezoid(double radians) { // This must be called seperately from periodic
+    goal = new State(optimizeAngle(Rotation2d.fromRadians(radians)).getRadians(), 0);
+    rotationRadiansBotOriented = Rotation2d.fromRadians(radians);
   }
 }
