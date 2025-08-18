@@ -200,5 +200,12 @@ public final class Constants {
     public static final boolean elevationEncoderTwoInverted = false;
     public static final int elevationTwoCurrentLimit = 0;
     public static final int elevationLimitSwitchID = 0;
+    public static final int barrelCanID = 0;
+    public static final boolean barrelInverted = false;
+    public static final int barrelCurrentLimit = 0;
+    public static final double barrelEncoderPositionFactor = 0;
+    public static final double barrelEncoderVeloFactor = 0;
+    public static final double barrelKp = 0;
+    public static final double barrelKd = 0;
   }
 }

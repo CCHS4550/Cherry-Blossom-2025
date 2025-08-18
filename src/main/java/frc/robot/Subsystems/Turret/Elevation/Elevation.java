@@ -22,7 +22,7 @@ public class Elevation extends SubsystemBase {
   public double manualControlVoltage = 3;
   public Rotation2d goalElevationRadians;
 
-  public enum wantedState {
+  public enum wantedElevationState {
     CHARACTERIZATION, // not going to code this part b/c pid constants already found and there's
     // like a million sources on how to tune pid
     MANUAL,
@@ -38,7 +38,7 @@ public class Elevation extends SubsystemBase {
     IDLE
   }
 
-  wantedState WantedState = wantedState.MANUAL;
+  wantedElevationState WantedState = wantedElevationState.MANUAL;
   systemState SystemState = systemState.MANUAL;
 
   public Elevation(ElevationIO io) {
@@ -47,16 +47,18 @@ public class Elevation extends SubsystemBase {
 
   @Override
   public void periodic() {
-    io.updateInputs(inputs);
+    synchronized (inputs) {
+      io.updateInputs(inputs);
 
-    if (DriverStation.isDisabled()) {
-      SystemState = systemState.IDLE;
-      WantedState = wantedState.IDLE;
-      io.setElevationOpenLoop(0.0);
+      if (DriverStation.isDisabled()) {
+        SystemState = systemState.IDLE;
+        WantedState = wantedElevationState.IDLE;
+        io.setElevationOpenLoop(0.0);
+      }
+
+      handlStateTransitions();
+      applyStates();
     }
-
-    handlStateTransitions();
-    applyStates();
   }
 
   public systemState handlStateTransitions() {
@@ -111,7 +113,7 @@ public class Elevation extends SubsystemBase {
     } else {
       state = profile.calculate(0.02, state, goal);
       double arbFF = elevationFF.calculate(state.position, state.velocity);
-      io.setElevationPos(goalElevationRadians, arbFF);
+      io.setElevationPos(Rotation2d.fromRadians(state.position), arbFF);
     }
   }
 
@@ -125,8 +127,20 @@ public class Elevation extends SubsystemBase {
     goalElevationRadians = Rotation2d.fromRadians(radians);
   }
 
-  public void beginTrapezoid(double radians) { // This must be called seperately from periodic
+  public void beginTrapezoid(
+      double
+          radians) { // if we knew specifically what goal to go to we could set this in the class,
+    // but because the state is goTo angle and not goto 60 degrees, we just set the
+    // desired angle in superstructure or sontrol scheme
     goal = new State(radians, 0);
     setGoalElevationRadians(radians);
+  }
+
+  public void setManualVoltage(double volts) {
+    manualControlVoltage = volts;
+  }
+
+  public void setWantedState(wantedElevationState wanted) {
+    WantedState = wanted;
   }
 }

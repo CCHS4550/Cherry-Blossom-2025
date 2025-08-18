@@ -20,7 +20,7 @@ public class Pneumatics extends SubsystemBase {
 
   public boolean isRunningCommand = false;
 
-  public enum WantedState {
+  public enum wantedPneumaticsState {
     TESTING,
     FILLING_AIR_TANK,
     SHOOT,
@@ -41,7 +41,7 @@ public class Pneumatics extends SubsystemBase {
     NONE
   }
 
-  WantedState wantedState = WantedState.IDLE;
+  wantedPneumaticsState WantedPneumaticsState = wantedPneumaticsState.IDLE;
   SystemState systemState = SystemState.IDLE;
   TestingTask testingTask = TestingTask.NONE;
 
@@ -51,20 +51,22 @@ public class Pneumatics extends SubsystemBase {
 
   @Override
   public void periodic() {
-    io.updateInputs(inputs);
+    synchronized (inputs) {
+      io.updateInputs(inputs);
 
-    if (DriverStation.isDisabled()) {
-      io.disablePressureSeal();
-      io.setCompressor(0.0);
-      systemState = SystemState.IDLE;
+      if (DriverStation.isDisabled()) {
+        io.disablePressureSeal();
+        io.setCompressor(0.0);
+        systemState = SystemState.IDLE;
+      }
+      systemState = handleStateTransitions();
+      applyStates();
     }
-    systemState = handleStateTransitions();
-    applyStates();
   }
 
   private SystemState handleStateTransitions() {
 
-    return switch (wantedState) {
+    return switch (WantedPneumaticsState) {
       case TESTING -> SystemState.TESTING;
       case FILLING_AIR_TANK -> {
         if (inputs.pressurePSI <= desiredPSI
@@ -126,11 +128,11 @@ public class Pneumatics extends SubsystemBase {
         new InstantCommand(() -> io.disablePressureSeal()),
         new WaitCommand(0.01),
         new InstantCommand(() -> isRunningCommand = false),
-        new InstantCommand(() -> setWantedState(WantedState.IDLE)));
+        new InstantCommand(() -> setWantedState(wantedPneumaticsState.IDLE)));
   }
 
-  public void setWantedState(WantedState wantedState) {
-    this.wantedState = wantedState;
+  public void setWantedState(wantedPneumaticsState wantedPneumaticsState) {
+    this.WantedPneumaticsState = wantedPneumaticsState;
   }
 
   public void setDesiredPressure(double PSI) {

@@ -24,7 +24,7 @@ public class Rotation extends SubsystemBase {
   private TrapezoidProfile.State state = new State();
   private TrapezoidProfile.State goal = new State();
 
-  public enum wantedState {
+  public enum wantedRotationState {
     CHARACTERIZATION, // not going to code this part b/c pid constants already found and there's
     // like a million sources on how to tune pid
     MANUAL,
@@ -42,7 +42,7 @@ public class Rotation extends SubsystemBase {
     IDLE
   }
 
-  wantedState WantedState = wantedState.MANUAL;
+  wantedRotationState WantedState = wantedRotationState.MANUAL;
   systemState SystemState = systemState.MANUAL;
 
   public Rotation(RotationIO io) {
@@ -51,22 +51,25 @@ public class Rotation extends SubsystemBase {
 
   @Override
   public void periodic() {
-    io.updateInputs(inputs);
+    synchronized (inputs) {
+      io.updateInputs(inputs);
 
-    if (DriverStation.isDisabled()) {
-      setWantedState(
-          wantedState.IDLE); // this many set to 0 funcs is redundant but better safe than sorry
-      SystemState = systemState.IDLE;
-      setManualVoltage(0.0);
-      io.setRotationOpenLoop(0.0);
+      if (DriverStation.isDisabled()) {
+        setWantedState(
+            wantedRotationState
+                .IDLE); // this many set to 0 funcs is redundant but better safe than sorry
+        SystemState = systemState.IDLE;
+        setManualVoltage(0.0);
+        io.setRotationOpenLoop(0.0);
+      }
+      SystemState = handleStateTransitions();
+      applyStates();
     }
-    SystemState = handleStateTransitions();
-    applyStates();
   }
 
   public systemState handleStateTransitions() {
-    if (WantedState != wantedState.ROBOT_ORIENTED_ANGLE
-        || WantedState != wantedState.FIELD_ORIENTED_ANGLE) {
+    if (WantedState != wantedRotationState.ROBOT_ORIENTED_ANGLE
+        || WantedState != wantedRotationState.FIELD_ORIENTED_ANGLE) {
       state = new State(inputs.rotationPositionRad, inputs.rotationVelocityRadPerSec);
     }
     return switch (WantedState) {
@@ -114,8 +117,8 @@ public class Rotation extends SubsystemBase {
     io.setRotationPos(optomizedAngle, arbFF);
   }
 
-  public void setWantedState(wantedState wanted) {
-    WantedState = wanted;
+  public void setWantedState(wantedRotationState wantedRotation) {
+    WantedState = wantedRotation;
   }
 
   public void setManualVoltage(double volts) {
@@ -142,7 +145,11 @@ public class Rotation extends SubsystemBase {
     robotYawVelo = velo;
   }
 
-  public void beginTrapezoid(double radians) { // This must be called seperately from periodic
+  public void setGoal(
+      double
+          radians) { // if we knew specifically what goal to go to we could set this in the class,
+    // but because the state is goTo angle and not goto 60 degrees, we just set the
+    // desired angle in superstructure or sontrol scheme
     goal = new State(optimizeAngle(Rotation2d.fromRadians(radians)).getRadians(), 0);
     rotationRadiansBotOriented = Rotation2d.fromRadians(radians);
   }
