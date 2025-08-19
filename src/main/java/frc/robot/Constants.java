@@ -66,30 +66,30 @@ public final class Constants {
     // Device CAN IDs
     public static final int pigeonCanId = 9;
 
-    public static final int frontLeftDriveCanId = 1;
-    public static final int backLeftDriveCanId = 3;
-    public static final int frontRightDriveCanId = 5;
-    public static final int backRightDriveCanId = 7;
+    public static final int frontRightDriveCanId = 3;
+    public static final int frontLeftDriveCanId = 7;
+    public static final int backRightDriveCanId = 2;
+    public static final int backLeftDriveCanId = 9;
 
-    public static final int frontLeftTurnCanId = 2;
-    public static final int backLeftTurnCanId = 4;
-    public static final int frontRightTurnCanId = 6;
-    public static final int backRightTurnCanId = 8;
+    public static final int frontRightTurnCanId = 4;
+    public static final int frontLeftTurnCanId = 6;
+    public static final int backRightTurnCanId = 1;
+    public static final int backLeftTurnCanId = 8;
 
-    public static final boolean frontLeftTurnInverted = false;
-    public static final boolean frontRightTurnInverted = false;
-    public static final boolean backLeftTurnInverted = false;
-    public static final boolean backRightTurnInverted = false;
+    public static final boolean frontLeftTurnInverted = true;
+    public static final boolean frontRightTurnInverted = true;
+    public static final boolean backLeftTurnInverted = true;
+    public static final boolean backRightTurnInverted = true;
 
-    public static final boolean frontLeftTurnEncoderInverted = true;
-    public static final boolean frontRightTurnEncoderInverted = true;
-    public static final boolean backLeftTurnEncoderInverted = true;
-    public static final boolean backRightTurnEncoderInverted = true;
+    public static final boolean frontLeftTurnEncoderInverted = false;
+    public static final boolean frontRightTurnEncoderInverted = false;
+    public static final boolean backLeftTurnEncoderInverted = false;
+    public static final boolean backRightTurnEncoderInverted = false;
 
-    public static final boolean frontLeftDriveInverted = false;
-    public static final boolean frontRightDriveInverted = false;
-    public static final boolean backLeftDriveInverted = false;
-    public static final boolean backRightDriveInverted = false;
+    public static final boolean frontLeftDriveInverted = true;
+    public static final boolean frontRightDriveInverted = true;
+    public static final boolean backLeftDriveInverted = true;
+    public static final boolean backRightDriveInverted = true;
 
     public static final boolean frontLeftDriveEncoderInverted = true;
     public static final boolean frontRightDriveEncoderInverted = true;
@@ -112,8 +112,9 @@ public final class Constants {
     // Drive PID configuration
     public static final double driveKp = 0.0;
     public static final double driveKd = 0.0;
-    public static final double driveKs = 0.0;
-    public static final double driveKv = 0.1;
+    public static final double driveKs = 0.16681;
+    public static final double driveKv = 2.609;
+    public static final double driveKa = 0.51582;
     public static final double driveSimP = 0.05;
     public static final double driveSimD = 0.0;
     public static final double driveSimKs = 0.0;
@@ -137,8 +138,8 @@ public final class Constants {
     public static final double turnPIDMaxInput = 2 * Math.PI; // Radians
 
     // angle lock constants
-    public static final double ANGLE_KP = 5.0;
-    public static final double ANGLE_KD = 0.4;
+    public static final double ANGLE_KP = 0.0; 
+    public static final double ANGLE_KD = 0.0;
     public static final double ANGLE_MAX_VELOCITY = 8.0;
     public static final double ANGLE_MAX_ACCELERATION = 20.0;
     public static final double FF_START_DELAY = 2.0; // Secs
@@ -165,10 +166,10 @@ public final class Constants {
   }
 
   public final class PneumaticConstants {
-    public static final int compressorCanID = 9999;
+    public static final int compressorCanID = 14;
     public static final boolean compressorInverted = false;
 
-    public static final int compressorFanPort = 999;
+    public static final int compressorFanPort = 14; // idk 
 
     public static final int pressureSealForward = 9;
     public static final int pressureSealBackward = 10;
@@ -179,15 +180,15 @@ public final class Constants {
   }
 
   public final class MechanismConstants {
-    public static final int rotationCanID = 999;
+    public static final int rotationCanID = 10;
     public static final boolean rotationInverted = false;
     public static final boolean rotationEncoderInverted = false;
     public static final int rotationCurrentLimit = 999;
     public static final double rotationEncoderPositionFactor = 0;
     public static final double rotationEncoderVeloFactor = 0;
-    public static final double rotationKp = 0;
-    public static final double rotationKd = 0;
-    public static final int elevationCanID = 0;
+    public static final double rotationKp = 9;
+    public static final double rotationKd = 1.25;
+    public static final int elevationCanID = 11;
     public static final boolean elevationInverted = false;
     public static final boolean elevationEncoderInverted = false;
     public static final int elevationCurrentLimit = 0;
@@ -195,17 +196,18 @@ public final class Constants {
     public static final double elevationEncoderVeloFactor = 0;
     public static final double elevationKp = 0;
     public static final double elevationKd = 0;
-    public static final int elevationCanIDTwo = 0;
+    public static final int elevationCanIDTwo = 12;
     public static final boolean elevationTwoInverted = false;
     public static final boolean elevationEncoderTwoInverted = false;
     public static final int elevationTwoCurrentLimit = 0;
-    public static final int elevationLimitSwitchID = 0;
-    public static final int barrelCanID = 0;
+    public static final int elevationLimitSwitchID = 2;
+    public static final int barrelCanID = 13;
     public static final boolean barrelInverted = false;
     public static final int barrelCurrentLimit = 0;
     public static final double barrelEncoderPositionFactor = 0;
     public static final double barrelEncoderVeloFactor = 0;
-    public static final double barrelKp = 0;
-    public static final double barrelKd = 0;
+    public static final double barrelKp = 15;
+    public static final double barrelKi = .25;
+    public static final double barrelKd = .7;
   }
 }
