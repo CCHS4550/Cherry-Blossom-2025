@@ -42,42 +42,42 @@ public class SparkOdometryThread {
 
   public Queue<Double> registerSparkSignal(SparkBase spark, DoubleSupplier signal) {
     Queue<Double> queue = new ArrayBlockingQueue<>(20);
-     Drive.odometryLock.lock();
+    Drive.odometryLock.lock();
     try {
       sparks.add(spark);
       sparkSignals.add(signal);
       sparkQueue.add(queue);
     } finally {
-       Drive.odometryLock.unlock();
+      Drive.odometryLock.unlock();
     }
     return queue;
   }
 
   public Queue<Double> registerGenericSignal(DoubleSupplier signal) {
     Queue<Double> queue = new ArrayBlockingQueue<>(20);
-     Drive.odometryLock.lock();
+    Drive.odometryLock.lock();
     try {
       genericSignals.add(signal);
       genericQueue.add(queue);
     } finally {
-       Drive.odometryLock.unlock();
+      Drive.odometryLock.unlock();
     }
     return queue;
   }
 
   public Queue<Double> makeTimeQueue() {
     Queue<Double> queue = new ArrayBlockingQueue<>(20);
-     Drive.odometryLock.lock();
+    Drive.odometryLock.lock();
     try {
       timeQueue.add(queue);
     } finally {
-       Drive.odometryLock.unlock();
+      Drive.odometryLock.unlock();
     }
     return queue;
   }
 
   private void run() {
-     Drive.odometryLock.lock();
+    Drive.odometryLock.lock();
     try {
       double timestamp = RobotController.getFPGATime() / 1e6;
       boolean good = true;
@@ -96,7 +96,7 @@ public class SparkOdometryThread {
         }
       }
     } finally {
-       Drive.odometryLock.unlock();
+      Drive.odometryLock.unlock();
     }
   }
 }
