@@ -68,21 +68,21 @@ public class Drive extends SubsystemBase {
   private double maxRotAccelRadPerSecSqOnTheFly;
   private double idealEndVeloOntheFly;
 
-  public double xJoystickInput = 0.0;
-  public double yJoystickInput = 0.0;
-  public double omegaJoystickInput = 0.0;
-  public double maxOptionalTurnVeloRadiansPerSec = Double.NaN;
-  public double maxVelocityOutputForDriveToPoint = Units.feetToMeters(10.0);
-  public Rotation2d joystickDriveAtAngleAngle = Rotation2d.fromRadians(0.0);
+  private double xJoystickInput = 0.0;
+  private double yJoystickInput = 0.0;
+  private double omegaJoystickInput = 0.0;
+  private double maxOptionalTurnVeloRadiansPerSec = Double.NaN;
+  private double maxVelocityOutputForDriveToPoint = Units.feetToMeters(10.0);
+  private Rotation2d joystickDriveAtAngleAngle = Rotation2d.fromRadians(0.0);
 
   private final PIDController autoDriveToPointController = new PIDController(3.0, 0, 0.1);
   private final PIDController teleopDriveToPointController = new PIDController(3.6, 0, 0.1);
   private Pose2d driveToPointPose = new Pose2d();
 
-  public static final double goToPoseTranslationError = Units.inchesToMeters(0.5);
+  private static final double goToPoseTranslationError = Units.inchesToMeters(0.5);
 
   private boolean isRunningCommand = false;
-  public BooleanSupplier shouldCancelEarly = () -> false;
+  private BooleanSupplier shouldCancelEarly = () -> false;
 
   public enum WantedState {
     SYS_ID,
