@@ -14,13 +14,13 @@ public class Elevation extends SubsystemBase {
 
   private final ElevationIOInputsAutoLogged inputs = new ElevationIOInputsAutoLogged();
 
-  private ArmFeedforward elevationFF = new ArmFeedforward(0.16328, 0.15212, 0.0029191, 0.0016397);
+  private ArmFeedforward elevationFF = new ArmFeedforward(Constants.MechanismConstants.ElevationConstants.elevationFFKs, Constants.MechanismConstants.ElevationConstants.elevationFFKg, Constants.MechanismConstants.ElevationConstants.elevationFFKv, Constants.MechanismConstants.ElevationConstants.elevationFFKa);
   private TrapezoidProfile.Constraints constraints = new Constraints(0, 0);
   private TrapezoidProfile profile = new TrapezoidProfile(constraints);
   private TrapezoidProfile.State state = new State();
   private TrapezoidProfile.State goal = new State();
 
-  PIDController elevationPID = new PIDController(10,0,0);
+  PIDController elevationPID = new PIDController(Constants.MechanismConstants.elevationKp,Constants.MotorConstants.elevationKi,Constants.MotorConstants.elevationKd);
 
   public double manualControlVoltage = 3;
   public Rotation2d goalElevationRadians;

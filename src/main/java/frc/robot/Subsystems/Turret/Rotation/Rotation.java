@@ -18,7 +18,7 @@ public class Rotation extends SubsystemBase {
   public Rotation2d robotOrientation;
   public double robotYawVelo;
 
-  private SimpleMotorFeedforward veloFF = new SimpleMotorFeedforward(0, 0, 0);
+  private SimpleMotorFeedforward veloFF = new SimpleMotorFeedforward(Constants.MechanismConstants.barrel, 0, 0);
   private TrapezoidProfile.Constraints constraints = new Constraints(0, 0);
   private TrapezoidProfile profile = new TrapezoidProfile(constraints);
   private TrapezoidProfile.State state = new State();

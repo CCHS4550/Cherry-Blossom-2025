@@ -19,7 +19,7 @@ public class Barrel extends SubsystemBase {
   private Rotation2d barrelAngle = Rotation2d.kZero;
   public boolean isAtAngle = true;
 
-  private SimpleMotorFeedforward veloFF = new SimpleMotorFeedforward(0, 0, 0);
+  private SimpleMotorFeedforward veloFF = new SimpleMotorFeedforward(Constants.MechanismConstants.BarrelConstants.barrelFFKs, Constants.MechanismConstants.BarrelConstants.barrelFFKv, Constants.MechanismConstants.BarrelConstants.barrelFFKa);
   private TrapezoidProfile.Constraints constraints = new Constraints(0, 0);
   private TrapezoidProfile profile = new TrapezoidProfile(constraints);
   private TrapezoidProfile.State state = new State();
