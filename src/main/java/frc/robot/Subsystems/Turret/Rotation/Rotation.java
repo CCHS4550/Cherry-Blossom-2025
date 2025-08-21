@@ -1,5 +1,5 @@
 package frc.robot.Subsystems.Turret.Rotation;
-
+import frc.robot.Constants;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
@@ -18,7 +18,8 @@ public class Rotation extends SubsystemBase {
   public Rotation2d robotOrientation;
   public double robotYawVelo;
 
-  private SimpleMotorFeedforward veloFF = new SimpleMotorFeedforward(Constants.MechanismConstants.barrel, 0, 0);
+  private SimpleMotorFeedforward veloFF =
+      new SimpleMotorFeedforward(Constants.MechanismConstants.RotationConstants.rotationFFKs, Constants.MechanismConstants.RotationConstants.rotationFFKv, Constants.MechanismConstants.RotationConstants.rotationFFKa);
   private TrapezoidProfile.Constraints constraints = new Constraints(0, 0);
   private TrapezoidProfile profile = new TrapezoidProfile(constraints);
   private TrapezoidProfile.State state = new State();

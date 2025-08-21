@@ -1,5 +1,5 @@
 package frc.robot.Subsystems.Turret.Barrels;
-
+import frc.robot.Constants;
 import static frc.robot.Util.SparkUtil.ifOK;
 import static frc.robot.Util.SparkUtil.ifOk;
 import static frc.robot.Util.SparkUtil.makeItWork;
@@ -30,20 +30,20 @@ public class BarrelIOSpark implements BarrelIO {
   private final Debouncer barrelDebouncer = new Debouncer(0.5);
 
   public BarrelIOSpark() {
-    barrelSpark = new SparkMax(Constants.MechanismConstants.barrelCanID, MotorType.kBrushless);
+    barrelSpark = new SparkMax(Constants.MechanismConstants.BarrelConstants.barrelCanID, MotorType.kBrushless);
     barrelEncoder = barrelSpark.getEncoder();
     barrelController = barrelSpark.getClosedLoopController();
 
     var barrelConfig = new SparkMaxConfig();
-    barrelConfig.inverted(Constants.MechanismConstants.barrelInverted);
+    barrelConfig.inverted(Constants.MechanismConstants.BarrelConstants.barrelInverted);
     barrelConfig
         .idleMode(IdleMode.kBrake)
-        .smartCurrentLimit(Constants.MechanismConstants.barrelCurrentLimit)
+        .smartCurrentLimit(Constants.MechanismConstants.BarrelConstants.barrelCurrentLimit)
         .voltageCompensation(12.0);
     barrelConfig
         .encoder
-        .positionConversionFactor(Constants.MechanismConstants.barrelEncoderPositionFactor)
-        .velocityConversionFactor(Constants.MechanismConstants.barrelEncoderVeloFactor)
+        .positionConversionFactor(Constants.MechanismConstants.BarrelConstants.barrelEncoderPositionFactor)
+        .velocityConversionFactor(Constants.MechanismConstants.BarrelConstants.barrelEncoderVeloFactor)
         .uvwMeasurementPeriod(20)
         .uvwAverageDepth(2);
     barrelConfig
@@ -51,7 +51,7 @@ public class BarrelIOSpark implements BarrelIO {
         .feedbackSensor(FeedbackSensor.kPrimaryEncoder)
         .positionWrappingEnabled(true)
         .positionWrappingInputRange(0, Math.PI * 2)
-        .pidf(Constants.MechanismConstants.barrelKp, 0, Constants.MechanismConstants.barrelKd, 0);
+        .pidf(Constants.MechanismConstants.BarrelConstants.barrelKp, 0, Constants.MechanismConstants.BarrelConstants.barrelKd, 0);
     barrelConfig
         .signals
         .primaryEncoderPositionAlwaysOn(true)

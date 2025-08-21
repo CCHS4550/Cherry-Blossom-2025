@@ -110,8 +110,8 @@ public final class Constants {
         (2 * Math.PI) / 60.0 / driveMotorReduction; // Rotor RPM -> Wheel Rad/Sec
 
     // Drive PID configuration
-    // public static final double driveKp = 0.0;
-    // public static final double driveKd = 0.0;
+    public static final double driveKp = 0.0;
+    public static final double driveKd = 0.0;
     public static final double xKp = 1;
     public static final double xKi = .1;
     public static final double xKd = 0;
@@ -150,7 +150,7 @@ public final class Constants {
     public static final double turnPIDMaxInput = 2 * Math.PI; // Radians
 
     // angle lock constants
-    public static final double ANGLE_KP = 0.0; 
+    public static final double ANGLE_KP = 0.0;
     public static final double ANGLE_KD = 0.0;
     public static final double ANGLE_MAX_VELOCITY = 8.0;
     public static final double ANGLE_MAX_ACCELERATION = 20.0;
@@ -181,7 +181,7 @@ public final class Constants {
     public static final int compressorCanID = 14;
     public static final boolean compressorInverted = false;
 
-    public static final int compressorFanPort = 5; // idk 
+    public static final int compressorFanPort = 5; // idk
 
     public static final int pressureSealForward = 9;
     public static final int pressureSealBackward = 10;
@@ -192,7 +192,7 @@ public final class Constants {
   }
 
   public final class MechanismConstants {
-    public final class RotationConstants{
+    public final class RotationConstants {
       public static final int rotationCanID = 10;
       public static final boolean rotationInverted = false;
       // public static final boolean rotationEncoderInverted = false;
@@ -200,10 +200,15 @@ public final class Constants {
       public static final double rotationEncoderPositionFactor = 0;
       public static final double rotationEncoderVeloFactor = 0;
       public static final double rotationKp = 9;
+      public static final double rotationKi = 1.5;
       public static final double rotationKd = 1.25;
+
+      public static final double rotationFFKs = 0;
+      public static final double rotationFFKv = 1.2324;
+      public static final double rotationFFKa = 0.63117;
     }
 
-    public final class ElevationConstants{
+    public final class ElevationConstants {
       public static final int elevationCanID = 11;
       public static final boolean elevationInverted = false;
       // public static final boolean elevationEncoderInverted = false;
@@ -224,7 +229,7 @@ public final class Constants {
       public static final int elevationLimitSwitchID = 2;
     }
 
-    public final class BarrelConstants{
+    public final class BarrelConstants {
       public static final int barrelCanID = 13;
       public static final boolean barrelInverted = false;
       public static final int barrelCurrentLimit = 80;
