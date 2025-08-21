@@ -33,15 +33,15 @@ public class DriveScheme {
     controller.rightBumper().onFalse(Commands.runOnce(() -> setSlowMode()));
 
     controller.a().whileTrue(Commands.run(() -> drive.setWantedState(WantedState.DRIVE_TO_POINT)));
-    controller.a().whileFalse(Commands.run(() -> drive.setWantedState(WantedState.TELEOP_DRIVE)));
+    controller.a().onFalse(Commands.run(() -> drive.setWantedState(WantedState.TELEOP_DRIVE)));
 
     controller.b().whileTrue(Commands.run(() -> drive.setWantedState(WantedState.PATH_ON_THE_FLY)));
-    controller.b().whileFalse(Commands.run(() -> drive.setWantedState(WantedState.TELEOP_DRIVE)));
+    controller.b().onFalse(Commands.run(() -> drive.setWantedState(WantedState.TELEOP_DRIVE)));
 
     controller
         .x()
         .whileTrue(Commands.run(() -> drive.setWantedState(WantedState.TELEOP_DRIVE_AT_ANGLE)));
-    controller.x().whileFalse(Commands.run(() -> drive.setWantedState(WantedState.TELEOP_DRIVE)));
+    controller.x().onFalse(Commands.run(() -> drive.setWantedState(WantedState.TELEOP_DRIVE)));
   }
 
   public static void setFastMode() {

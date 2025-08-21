@@ -46,20 +46,35 @@ import java.util.function.BooleanSupplier;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 
+/**
+ * this creates a drivetrain that tracks on field positions, and is able to move the entire bot according to input
+ * uses a state machine function, so most operations should be able to be called by simply changing the wanted state
+ */
 public class Drive extends SubsystemBase {
 
+  //java lock to implement thread safe
   static final Lock odometryLock = new ReentrantLock();
-  private final GyroIO gyroIO;
-  private final GyroIOInputsAutoLogged gyroInputs = new GyroIOInputsAutoLogged();
-  private final Module[] modules = new Module[4];
+  
+  //declare gyro
+  private final GyroIO gyroIO; // the gyro interface used by drive, will be defined as gyroPigeon if real
+  private final GyroIOInputsAutoLogged gyroInputs = new GyroIOInputsAutoLogged(); // the logged gyro inputs
+  
+  private final Module[] modules = new Module[4]; // the 4 modules
+  
   private final SysIdRoutine sysId;
+  
+  // configure gyro disconnection alert
   private final Alert gyroDCAlert =
       new Alert("Disconnected gyro, using kinematics as fallback.", AlertType.kError);
 
+  // used to perform inverse kinematics to convert chassis speeds to individual module states
   private SwerveDriveKinematics kinematics =
       new SwerveDriveKinematics(Constants.DriveConstants.moduleTranslations);
+
+  //initial rotation of bot
   private Rotation2d rawGyroRotation = new Rotation2d();
 
+  // values used for pathfinding to pose
   private Pose2d pathOntheFlyPose;
   private PathConstraints pathConstraintsOnTheFly;
   private double maxTransSpeedMpsOnTheFly;
@@ -68,22 +83,32 @@ public class Drive extends SubsystemBase {
   private double maxRotAccelRadPerSecSqOnTheFly;
   private double idealEndVeloOntheFly;
 
+  //values to use during teleop, these will be periodically set during the default command
   public double xJoystickInput = 0.0;
   public double yJoystickInput = 0.0;
   public double omegaJoystickInput = 0.0;
+  
+  // angle for teleop drive but the bot is at a fixed angle
+  public Rotation2d joystickDriveAtAngleAngle = Rotation2d.fromRadians(0.0);
+  
+  //constraints for drive to point functionality
   public double maxOptionalTurnVeloRadiansPerSec = Double.NaN;
   public double maxVelocityOutputForDriveToPoint = Units.feetToMeters(10.0);
-  public Rotation2d joystickDriveAtAngleAngle = Rotation2d.fromRadians(0.0);
 
+  // pid controllers for drive to point, not fully tested so unsure if seperation of auto and teleop is needed, but lower auto values also mean slower more accurate pid
   private final PIDController autoDriveToPointController = new PIDController(3.0, 0, 0.1);
   private final PIDController teleopDriveToPointController = new PIDController(3.6, 0, 0.1);
-  private Pose2d driveToPointPose = new Pose2d();
+  private Pose2d driveToPointPose = new Pose2d(); // pose to drive to
 
+  //acceptable margin of error when going to a posse
   public static final double goToPoseTranslationError = Units.inchesToMeters(0.5);
 
-  private boolean isRunningCommand = false;
-  public BooleanSupplier shouldCancelEarly = () -> false;
+  //potential bad practice
+  // mainly used in path on the fly, nothing else uses command scheduler
+  private boolean isRunningCommand = false; //exists in order to prevent the periodic state machine from calling the same command multiple times
+  public BooleanSupplier shouldCancelEarly = () -> false; // we can enable should cancel early anytime we want to stop a command from running
 
+  // state we want drive train to be in
   public enum WantedState {
     SYS_ID,
     AUTO,
@@ -94,6 +119,7 @@ public class Drive extends SubsystemBase {
     IDLE
   }
 
+  // state the drive train is in
   public enum SystemState {
     SYS_ID,
     AUTO,
@@ -104,6 +130,7 @@ public class Drive extends SubsystemBase {
     IDLE
   }
 
+  // which sys id routine to run
   public enum SysIdtoRun {
     NONE,
     DRIVE_Wheel_Radius_Characterization,
@@ -114,10 +141,12 @@ public class Drive extends SubsystemBase {
     DYNAMIC_REVERSE
   }
 
+  // initialize our states
   private SystemState systemState = SystemState.TELEOP_DRIVE;
   private WantedState wantedState = WantedState.TELEOP_DRIVE;
   private SysIdtoRun sysIdtoRun = SysIdtoRun.NONE;
 
+  // array of our previous module positions
   private SwerveModulePosition[] lastModulePos =
       new SwerveModulePosition[] {
         new SwerveModulePosition(),
@@ -125,9 +154,21 @@ public class Drive extends SubsystemBase {
         new SwerveModulePosition(),
         new SwerveModulePosition()
       };
+
+  // creates a swervedrive pose estimator, can be used to fuse with vision
   private SwerveDrivePoseEstimator poseEstimator =
       new SwerveDrivePoseEstimator(kinematics, rawGyroRotation, lastModulePos, new Pose2d());
 
+
+  /**
+   * constructor for drive train
+   * 
+   * @param gyroIO instance of gyroIO or classes that implement gyroIO
+   * @param flModuleIO instance of moduleIO or classes that implement moduleIO
+   * @param frModuleIO instance of moduleIO or classes that implement moduleIO
+   * @param blModuleIO instance of moduleIO or classes that implement moduleIO
+   * @param brModuleIO instance of moduleIO or classes that implement moduleIO
+   */
   public Drive(
       GyroIO gyroIO,
       ModuleIO flModuleIO,
@@ -143,8 +184,10 @@ public class Drive extends SubsystemBase {
     // Usage reporting
     HAL.report(tResourceType.kResourceType_RobotDrive, tInstances.kRobotDriveSwerve_AdvantageKit);
 
+    // begin the odometry thread
     SparkOdometryThread.getInstance().start();
 
+    // create our autobuilder for pathfinder
     AutoBuilder.configure(
         this::getPose,
         this::setPose,
@@ -155,7 +198,11 @@ public class Drive extends SubsystemBase {
         Constants.DriveConstants.ppConfig,
         () -> DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red,
         this);
+
+    //use our logged AD* algorithm as the pathfinder
     Pathfinding.setPathfinder(new LocalADStarAK());
+    
+    //logging
     PathPlannerLogging.setLogActivePathCallback(
         (activePath) -> {
           Logger.recordOutput(
@@ -166,6 +213,7 @@ public class Drive extends SubsystemBase {
           Logger.recordOutput("Odometry/TrajectorySetpoint", targetPose);
         });
 
+    //create the sysID routine
     sysId =
         new SysIdRoutine(
             new SysIdRoutine.Config(
@@ -179,18 +227,26 @@ public class Drive extends SubsystemBase {
 
   @Override
   public void periodic() {
+    //lock the thread for thread safe
     odometryLock.lock();
+    
+    // update and log gyro inputs
     gyroIO.updateInputs(gyroInputs);
     Logger.processInputs("Drive/Gyro", gyroInputs);
+    
+    // run modules periodic method
     for (var module : modules) {
       module.periodic();
     }
     odometryLock.unlock();
 
+    // stop if disabled
     if (DriverStation.isDisabled()) {
       for (var module : modules) {
         module.stop();
       }
+      setWantedState(WantedState.IDLE);
+      systemState = SystemState.IDLE;
       Logger.recordOutput("SwerveStates/Setpoints", new SwerveModuleState[] {});
       Logger.recordOutput("SwerveStates/SetpointsOptimized", new SwerveModuleState[] {});
     }
@@ -472,7 +528,11 @@ public class Drive extends SubsystemBase {
       } else {
         return true;
       }
-    } else {
+    } else if(systemState!= SystemState.DRIVE_TO_POINT || systemState != SystemState.PATH_ON_THE_FLY){
+      return false;
+    }
+    
+    else {
       return true;
     }
   }
@@ -627,6 +687,14 @@ public class Drive extends SubsystemBase {
   }
 
   public void setWantedState(WantedState wantedState) {
+    
+    // reset the command canceller when setting the state to path on the fly and cancel the command when not
+    if(wantedState == WantedState.PATH_ON_THE_FLY){
+      setEarlyCancel(false);
+    }
+    else{
+      setEarlyCancel(true);
+    }
     this.wantedState = wantedState;
   }
 

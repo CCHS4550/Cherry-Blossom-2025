@@ -26,6 +26,7 @@ import java.util.Queue;
 import java.util.function.DoubleSupplier;
 
 // define a class that uses the interface ModuleIO
+// used to initiate the hardware used on the row and define the interface methods
 // call 4 times for all 4 modules
 public class ModuleIOSpark implements ModuleIO {
 
@@ -52,10 +53,10 @@ public class ModuleIOSpark implements ModuleIO {
   private final Debouncer driveDebouncer = new Debouncer(0.5);
   private final Debouncer turnDebouncer = new Debouncer(0.5);
 
-  /*
+  /**
    * Contructor for the module
    * 
-   * @param module: the module that is being created 
+   * @param module the module that is being created 
    * 0 -> front left
    * 1 -> front right
    * 2 -> back left
@@ -113,7 +114,7 @@ public class ModuleIOSpark implements ModuleIO {
       default -> turnConfig.inverted(false);
     }
     
-    /*
+    /**
      * idleMode is Brake, means that when no voltage is applied stay at position
      * set the smart current limit to avoid going over what the motor can handle
      * voltage compensation = 12 because working with 12v car battery
@@ -123,7 +124,7 @@ public class ModuleIOSpark implements ModuleIO {
         .smartCurrentLimit(Constants.DriveConstants.turnMotorCurrentLimit)
         .voltageCompensation(12);
     
-    /*
+    /**
      * configures the turn encoder
      * position factor converts rotations to radians while accounting for any gearing
      * velocity factor converts rotations/min to radians/sec while accounting for any gearing
@@ -138,7 +139,7 @@ public class ModuleIOSpark implements ModuleIO {
         .velocityConversionFactor(Constants.DriveConstants.turnEncoderVelocityFactor)
         .averageDepth(2);
     
-    /*
+    /**
      * each sparkmax supports up to 4 slots for a preconfigured pid that it can then call using SparkClosedLoopController
      * defaults to slot 0 if not specified
      * 
@@ -157,7 +158,7 @@ public class ModuleIOSpark implements ModuleIO {
             Constants.DriveConstants.turnPIDMinInput, Constants.DriveConstants.turnPIDMaxInput)
         .pidf(Constants.DriveConstants.turnKp, 0.0, Constants.DriveConstants.turnKd, 0.0);
     
-    /*
+    /**
      * configure how often the turnmotor receives/uses signals
      * 
      * we set the encoder to always give output
@@ -178,7 +179,7 @@ public class ModuleIOSpark implements ModuleIO {
         .busVoltagePeriodMs(20)
         .outputCurrentPeriodMs(20);
     
-    /*
+    /**
     * configures the turn motor, retrying if faulting
     */    
     SparkUtil.makeItWork(
@@ -191,7 +192,7 @@ public class ModuleIOSpark implements ModuleIO {
     // drive motor config
     var driveConfig = new SparkMaxConfig();
 
-    /*
+    /**
      * use switch statement to set correct inverted value
      */
     switch (module) {
@@ -201,7 +202,7 @@ public class ModuleIOSpark implements ModuleIO {
       case 3 -> driveConfig.inverted(Constants.DriveConstants.backRightDriveInverted);
       default -> driveConfig.inverted(false);
     }
-    /*
+    /**
      * idleMode is Brake, means that when no voltage is applied stay at position
      * set the smart current limit to avoid going over what the motor can handle
      * voltage compensation = 12 because working with 12v car battery
@@ -211,7 +212,7 @@ public class ModuleIOSpark implements ModuleIO {
         .smartCurrentLimit(Constants.DriveConstants.driveMotorCurrentLimit)
         .voltageCompensation(12.0);
     
-    /*
+    /**
      * configures the drive encoder
      * remember that because drive is just the wheel spinning in circles, the encoder position reseting to 0 each restart is not an issue, so not absolute encoder required
      * position factor converts rotations to radians while accounting for any gearing
@@ -228,7 +229,7 @@ public class ModuleIOSpark implements ModuleIO {
         .uvwMeasurementPeriod(10)
         .uvwAverageDepth(2);
 
-    /*
+    /**
      * each sparkmax supports up to 4 slots for a preconfigured pid that it can then call using SparkClosedLoopController
      * defaults to slot 0 if not specified
      * 
@@ -244,7 +245,7 @@ public class ModuleIOSpark implements ModuleIO {
         .feedbackSensor(FeedbackSensor.kPrimaryEncoder)
         .pidf(Constants.DriveConstants.driveKp, 0.0, Constants.DriveConstants.driveKd, 0.0);
 
-    /*
+    /**
      * configure how often the drivemotor receives/uses signals
      * 
      * we set the encoder to always give output
@@ -264,7 +265,7 @@ public class ModuleIOSpark implements ModuleIO {
         .busVoltagePeriodMs(20)
         .outputCurrentPeriodMs(20);
 
-    /*
+    /**
     * configures the turn motor, retrying if faulting
     */   
     makeItWork(
@@ -274,7 +275,7 @@ public class ModuleIOSpark implements ModuleIO {
             driveSpark.configure(
                 driveConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters));
 
-    /*
+    /**
     * reset drive encoder, retrying if faulting
     */   
     makeItWork(
@@ -331,7 +332,7 @@ public class ModuleIOSpark implements ModuleIO {
     turnPosQueue.clear();
   }
 
-  /*
+  /**
    * sets drive motor to specified open loop value
    * 
    * @param output the volts to set 
@@ -341,7 +342,7 @@ public class ModuleIOSpark implements ModuleIO {
     driveSpark.setVoltage(output);
   }
 
-  /*
+  /**
    * sets turn motor to specified open loop value
    * 
    * @param output the volts to set 
@@ -351,7 +352,7 @@ public class ModuleIOSpark implements ModuleIO {
     turnSpark.setVoltage(output);
   }
 
-  /*
+  /**
    * set drive motor to a desired velocity while calculating a feedforward value to feed to the spark controller
    * 
    * @param velo velocity in radians per second
@@ -365,7 +366,7 @@ public class ModuleIOSpark implements ModuleIO {
         velo, ControlType.kVelocity, ClosedLoopSlot.kSlot0, ffvolts, ArbFFUnits.kVoltage);
   }
 
-  /*
+  /**
    * set turn motor to a desire angle, while wrapping the setpoint to prevent invalid inputs and account for the motor offset
    * no feedforward because there is no velocity goal to achieve
    * 
