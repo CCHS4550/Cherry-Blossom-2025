@@ -1,5 +1,7 @@
 package frc.robot.Subsystems.Turret.Barrels;
-import frc.robot.Constants;
+
+import static frc.robot.Constants.MechanismConstants.BarrelConstants.*;
+
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -20,11 +22,9 @@ public class Barrel extends SubsystemBase {
   public boolean isAtAngle = true;
 
   private SimpleMotorFeedforward veloFF =
-      new SimpleMotorFeedforward(
-          Constants.MechanismConstants.BarrelConstants.barrelFFKs,
-          Constants.MechanismConstants.BarrelConstants.barrelFFKv,
-          Constants.MechanismConstants.BarrelConstants.barrelFFKa);
-  private TrapezoidProfile.Constraints constraints = new Constraints(0, 0);
+      new SimpleMotorFeedforward(barrelFFKs, barrelFFKv, barrelFFKa);
+  private TrapezoidProfile.Constraints constraints =
+      new Constraints(barrelTrapezoidMaxVelo, barrelTrapezoidMaxAccel);
   private TrapezoidProfile profile = new TrapezoidProfile(constraints);
   private TrapezoidProfile.State state = new State();
   private TrapezoidProfile.State goal = new State();

@@ -1,5 +1,7 @@
 package frc.robot.Subsystems.Turret.Rotation;
-import frc.robot.Constants;
+
+import static frc.robot.Constants.MechanismConstants.RotationConstants.*;
+
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
@@ -19,8 +21,9 @@ public class Rotation extends SubsystemBase {
   public double robotYawVelo;
 
   private SimpleMotorFeedforward veloFF =
-      new SimpleMotorFeedforward(Constants.MechanismConstants.RotationConstants.rotationFFKs, Constants.MechanismConstants.RotationConstants.rotationFFKv, Constants.MechanismConstants.RotationConstants.rotationFFKa);
-  private TrapezoidProfile.Constraints constraints = new Constraints(0, 0);
+      new SimpleMotorFeedforward(rotationFFKs, rotationFFKv, rotationFFKa);
+  private TrapezoidProfile.Constraints constraints =
+      new Constraints(rotationTrapezoidMaxVelo, rotationTrapezoidMaxAccel);
   private TrapezoidProfile profile = new TrapezoidProfile(constraints);
   private TrapezoidProfile.State state = new State();
   private TrapezoidProfile.State goal = new State();
@@ -90,8 +93,7 @@ public class Rotation extends SubsystemBase {
         io.setRotationOpenLoop(manualControlVoltage);
         break;
       case ROBOT_ORIENTED_ANGLE:
-        rotationRadiansBotOriented = optimizeAngle(rotationRadiansBotOriented);
-        io.setRotationPos(rotationRadiansBotOriented);
+        runNonAdjustedAngle();
         break;
       case FIELD_ORIENTED_ANGLE:
         runRobotAdjustedAngle();
@@ -104,18 +106,18 @@ public class Rotation extends SubsystemBase {
   public void runRobotAdjustedAngle() {
     Rotation2d adjustedAngle = rotationRadiansBotOriented.minus(robotOrientation);
     adjustedAngle = optimizeAngle(adjustedAngle);
-    goal = new State(rotationRadiansBotOriented.getRadians() - robotOrientation.getRadians(), 0);
-    goal = new State(optimizeAngle(Rotation2d.fromRadians(goal.position)).getRadians(), 0);
+    goal = new State(adjustedAngle.getRadians(), 0.0);
     state = profile.calculate(0.02, state, goal);
     double arbFF = veloFF.calculate(state.velocity - robotYawVelo);
-    io.setRotationPos(adjustedAngle, arbFF);
+    io.setRotationPos(Rotation2d.fromRadians(state.position), arbFF);
   }
 
   public void runNonAdjustedAngle() {
     Rotation2d optomizedAngle = optimizeAngle(rotationRadiansBotOriented);
+    goal = new State(optomizedAngle.getRadians(), 0.0);
     state = profile.calculate(0.02, state, goal);
     double arbFF = veloFF.calculate(state.velocity);
-    io.setRotationPos(optomizedAngle, arbFF);
+    io.setRotationPos(Rotation2d.fromRadians(state.position), arbFF);
   }
 
   public void setWantedState(wantedRotationState wantedRotation) {

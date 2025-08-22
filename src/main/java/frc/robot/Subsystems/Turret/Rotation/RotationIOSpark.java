@@ -30,7 +30,9 @@ public class RotationIOSpark implements RotationIO {
   private final Debouncer rotationDebouncer = new Debouncer(0.5);
 
   public RotationIOSpark() {
-    rotationSpark = new SparkMax(Constants.MechanismConstants.RotationConstants.rotationCanID, MotorType.kBrushless);
+    rotationSpark =
+        new SparkMax(
+            Constants.MechanismConstants.RotationConstants.rotationCanID, MotorType.kBrushless);
     rotationEncoder = rotationSpark.getEncoder();
     rotationController = rotationSpark.getClosedLoopController();
 
@@ -42,8 +44,10 @@ public class RotationIOSpark implements RotationIO {
         .voltageCompensation(12.0);
     rotationConfig
         .encoder
-        .positionConversionFactor(Constants.MechanismConstants.RotationConstants.rotationEncoderPositionFactor)
-        .velocityConversionFactor(Constants.MechanismConstants.RotationConstants.rotationEncoderVeloFactor)
+        .positionConversionFactor(
+            Constants.MechanismConstants.RotationConstants.rotationEncoderPositionFactor)
+        .velocityConversionFactor(
+            Constants.MechanismConstants.RotationConstants.rotationEncoderVeloFactor)
         .uvwMeasurementPeriod(20)
         .uvwAverageDepth(2);
     rotationConfig
@@ -52,7 +56,10 @@ public class RotationIOSpark implements RotationIO {
         .positionWrappingEnabled(true)
         .positionWrappingInputRange(0, Math.PI * 2)
         .pidf(
-            Constants.MechanismConstants.RotationConstants.rotationKp, 0, Constants.MechanismConstants.RotationConstants.rotationKd, 0);
+            Constants.MechanismConstants.RotationConstants.rotationKp,
+            0,
+            Constants.MechanismConstants.RotationConstants.rotationKd,
+            0);
     rotationConfig
         .signals
         .primaryEncoderPositionAlwaysOn(true)

@@ -1,7 +1,8 @@
 package frc.robot.Subsystems.Turret.Elevation;
-import frc.robot.Constants;
+
+import static frc.robot.Constants.MechanismConstants.ElevationConstants.*;
+
 import edu.wpi.first.math.controller.ArmFeedforward;
-import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.Constraints;
@@ -15,21 +16,12 @@ public class Elevation extends SubsystemBase {
   private final ElevationIOInputsAutoLogged inputs = new ElevationIOInputsAutoLogged();
 
   private ArmFeedforward elevationFF =
-      new ArmFeedforward(
-          Constants.MechanismConstants.ElevationConstants.elevationFFKs,
-          Constants.MechanismConstants.ElevationConstants.elevationFFKg,
-          Constants.MechanismConstants.ElevationConstants.elevationFFKv,
-          Constants.MechanismConstants.ElevationConstants.elevationFFKa);
-  private TrapezoidProfile.Constraints constraints = new Constraints(0, 0);
+      new ArmFeedforward(elevationFFKs, elevationFFKg, elevationFFKv, elevationFFKa);
+  private TrapezoidProfile.Constraints constraints =
+      new Constraints(elevationTrapezoidMaxVelo, elevationTrapezoidMaxAccel);
   private TrapezoidProfile profile = new TrapezoidProfile(constraints);
   private TrapezoidProfile.State state = new State();
   private TrapezoidProfile.State goal = new State();
-
-  PIDController elevationPID =
-      new PIDController(
-          Constants.MechanismConstants.ElevationConstants.elevationKp,
-          Constants.MechanismConstants.ElevationConstants.elevationKi,
-          Constants.MechanismConstants.ElevationConstants.elevationKd);
 
   public double manualControlVoltage = 3;
   public Rotation2d goalElevationRadians;
