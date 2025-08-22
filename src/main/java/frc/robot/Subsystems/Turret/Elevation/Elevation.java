@@ -1,5 +1,7 @@
 package frc.robot.Subsystems.Turret.Elevation;
 
+import static frc.robot.Constants.MechanismConstants.ElevationConstants.*;
+
 import edu.wpi.first.math.controller.ArmFeedforward;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
@@ -13,8 +15,10 @@ public class Elevation extends SubsystemBase {
 
   private final ElevationIOInputsAutoLogged inputs = new ElevationIOInputsAutoLogged();
 
-  private ArmFeedforward elevationFF = new ArmFeedforward(0, 0, 0);
-  private TrapezoidProfile.Constraints constraints = new Constraints(0, 0);
+  private ArmFeedforward elevationFF =
+      new ArmFeedforward(elevationFFKs, elevationFFKg, elevationFFKv, elevationFFKa);
+  private TrapezoidProfile.Constraints constraints =
+      new Constraints(elevationTrapezoidMaxVelo, elevationTrapezoidMaxAccel);
   private TrapezoidProfile profile = new TrapezoidProfile(constraints);
   private TrapezoidProfile.State state = new State();
   private TrapezoidProfile.State goal = new State();

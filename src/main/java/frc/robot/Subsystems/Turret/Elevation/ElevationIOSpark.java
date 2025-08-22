@@ -35,24 +35,30 @@ public class ElevationIOSpark implements ElevationIO {
 
   public ElevationIOSpark() {
     elevationSpark =
-        new SparkMax(Constants.MechanismConstants.elevationCanID, MotorType.kBrushless);
+        new SparkMax(
+            Constants.MechanismConstants.ElevationConstants.elevationCanID, MotorType.kBrushless);
     elevationSparkTwo =
-        new SparkMax(Constants.MechanismConstants.elevationCanIDTwo, MotorType.kBrushless);
-    limitSwitch = new DigitalInput(Constants.MechanismConstants.elevationLimitSwitchID);
+        new SparkMax(
+            Constants.MechanismConstants.ElevationConstants.elevationCanIDTwo,
+            MotorType.kBrushless);
+    limitSwitch =
+        new DigitalInput(Constants.MechanismConstants.ElevationConstants.elevationLimitSwitchID);
     elevationEncoder = elevationSpark.getEncoder();
     elevationEncoderTwo = elevationSparkTwo.getEncoder();
     elevationController = elevationSpark.getClosedLoopController();
 
     var elevationConfig = new SparkMaxConfig();
-    elevationConfig.inverted(Constants.MechanismConstants.elevationInverted);
+    elevationConfig.inverted(Constants.MechanismConstants.ElevationConstants.elevationInverted);
     elevationConfig
         .idleMode(IdleMode.kBrake)
-        .smartCurrentLimit(Constants.MechanismConstants.elevationCurrentLimit)
+        .smartCurrentLimit(Constants.MechanismConstants.ElevationConstants.elevationCurrentLimit)
         .voltageCompensation(12.0);
     elevationConfig
         .encoder
-        .positionConversionFactor(Constants.MechanismConstants.elevationEncoderPositionFactor)
-        .velocityConversionFactor(Constants.MechanismConstants.elevationEncoderVeloFactor)
+        .positionConversionFactor(
+            Constants.MechanismConstants.ElevationConstants.elevationEncoderPositionFactor)
+        .velocityConversionFactor(
+            Constants.MechanismConstants.ElevationConstants.elevationEncoderVeloFactor)
         .uvwMeasurementPeriod(20)
         .uvwAverageDepth(2);
     elevationConfig
@@ -60,9 +66,9 @@ public class ElevationIOSpark implements ElevationIO {
         .feedbackSensor(FeedbackSensor.kPrimaryEncoder)
         .positionWrappingEnabled(false)
         .pidf(
-            Constants.MechanismConstants.elevationKp,
+            Constants.MechanismConstants.ElevationConstants.elevationKp,
             0,
-            Constants.MechanismConstants.elevationKd,
+            Constants.MechanismConstants.ElevationConstants.elevationKd,
             0);
     elevationConfig
         .signals
@@ -81,16 +87,19 @@ public class ElevationIOSpark implements ElevationIO {
     makeItWork(elevationSpark, 5, () -> elevationEncoder.setPosition(0.0));
 
     var elevationTwoConfig = new SparkMaxConfig();
-    elevationTwoConfig.inverted(Constants.MechanismConstants.elevationTwoInverted);
+    elevationTwoConfig.inverted(
+        Constants.MechanismConstants.ElevationConstants.elevationTwoInverted);
     elevationTwoConfig.follow(elevationSpark);
     elevationTwoConfig
         .idleMode(IdleMode.kBrake)
-        .smartCurrentLimit(Constants.MechanismConstants.elevationTwoCurrentLimit)
+        .smartCurrentLimit(Constants.MechanismConstants.ElevationConstants.elevationTwoCurrentLimit)
         .voltageCompensation(12.0);
     elevationTwoConfig
         .encoder
-        .positionConversionFactor(Constants.MechanismConstants.elevationEncoderPositionFactor)
-        .velocityConversionFactor(Constants.MechanismConstants.elevationEncoderVeloFactor)
+        .positionConversionFactor(
+            Constants.MechanismConstants.ElevationConstants.elevationEncoderPositionFactor)
+        .velocityConversionFactor(
+            Constants.MechanismConstants.ElevationConstants.elevationEncoderVeloFactor)
         .uvwMeasurementPeriod(20)
         .uvwAverageDepth(2);
     elevationTwoConfig
