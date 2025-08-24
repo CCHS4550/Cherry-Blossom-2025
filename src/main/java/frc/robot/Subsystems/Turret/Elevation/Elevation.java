@@ -1,5 +1,7 @@
 package frc.robot.Subsystems.Turret.Elevation;
 
+import static frc.robot.Constants.MechanismConstants.ElevationConstants.*;
+
 import edu.wpi.first.math.controller.ArmFeedforward;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
@@ -20,15 +22,17 @@ public class Elevation extends SubsystemBase {
 
   private final Alert elevationDCAlert;
   private final Alert elevationTwoDCAlert;
-  
+
   // feed forward control
-  private ArmFeedforward elevationFF = new ArmFeedforward(0, 0, 0);
+  private ArmFeedforward elevationFF =
+      new ArmFeedforward(elevationFFKs, elevationFFKg, elevationFFKv, elevationFFKa);
   
   // motion profiling
-  private TrapezoidProfile.Constraints constraints = new Constraints(0, 0); // max speed and acceleration of the profile, in meters per second and meters per second^2
+  private TrapezoidProfile.Constraints constraints =
+      new Constraints(elevationTrapezoidMaxVelo, elevationTrapezoidMaxAccel); // max speed and acceleration of the profile, in meters per second and meters per second^2
   private TrapezoidProfile profile = new TrapezoidProfile(constraints); // create the profile
   private TrapezoidProfile.State state = new State(); // our current state, that will be updated by the profile into our desired checkpoint on the way to the goal, which we will then get to
-  private TrapezoidProfile.State goal = new State(); //// our desired state
+
 
   public double manualControlVoltage = 3; //set to different values before switching the state to manual
   public Rotation2d goalElevationRadians; // desired angle to go to in radians

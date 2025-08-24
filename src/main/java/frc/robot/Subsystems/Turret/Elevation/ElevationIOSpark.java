@@ -50,13 +50,15 @@ public class ElevationIOSpark implements ElevationIO {
     
     // fully define the elevation motors
     elevationSpark =
-        new SparkMax(Constants.MechanismConstants.elevationCanID, MotorType.kBrushless);
+        new SparkMax(
+            Constants.MechanismConstants.ElevationConstants.elevationCanID, MotorType.kBrushless);
     elevationSparkTwo =
-        new SparkMax(Constants.MechanismConstants.elevationCanIDTwo, MotorType.kBrushless);
-    
+        new SparkMax(
+            Constants.MechanismConstants.ElevationConstants.elevationCanIDTwo,
+            MotorType.kBrushless);
     // fully define the limit switch
-    limitSwitch = new DigitalInput(Constants.MechanismConstants.elevationLimitSwitchID);
-    
+    limitSwitch =
+        new DigitalInput(Constants.MechanismConstants.ElevationConstants.elevationLimitSwitchID);
     // fully define the encoders
     elevationEncoder = elevationSpark.getEncoder();
     elevationEncoderTwo = elevationSparkTwo.getEncoder();
@@ -67,18 +69,18 @@ public class ElevationIOSpark implements ElevationIO {
     //config for the primary motor of the elevation subsystem, this is the one that will do all the pid calcs and be called for information
     var elevationConfig = new SparkMaxConfig();
     
-    // if it should be inverted
-    elevationConfig.inverted(Constants.MechanismConstants.elevationInverted);
+    // if it should be inverted  
+    elevationConfig.inverted(Constants.MechanismConstants.ElevationConstants.elevationInverted);
     
     /**
      * idleMode is Brake, stay at position when stopped
      * set the smart current limit to avoid going over what the motor can handle 
      * 
      * <p> voltage compensation = 12 because working with 12v car battery
-     */
+     */  
     elevationConfig
         .idleMode(IdleMode.kBrake)
-        .smartCurrentLimit(Constants.MechanismConstants.elevationCurrentLimit)
+        .smartCurrentLimit(Constants.MechanismConstants.ElevationConstants.elevationCurrentLimit)
         .voltageCompensation(12.0);
     
     /**
@@ -96,8 +98,10 @@ public class ElevationIOSpark implements ElevationIO {
      */
     elevationConfig
         .encoder
-        .positionConversionFactor(Constants.MechanismConstants.elevationEncoderPositionFactor)
-        .velocityConversionFactor(Constants.MechanismConstants.elevationEncoderVeloFactor)
+        .positionConversionFactor(
+            Constants.MechanismConstants.ElevationConstants.elevationEncoderPositionFactor)
+        .velocityConversionFactor(
+            Constants.MechanismConstants.ElevationConstants.elevationEncoderVeloFactor)
         .uvwMeasurementPeriod(20)
         .uvwAverageDepth(2);
 
@@ -117,9 +121,9 @@ public class ElevationIOSpark implements ElevationIO {
         .feedbackSensor(FeedbackSensor.kPrimaryEncoder)
         .positionWrappingEnabled(false)
         .pidf(
-            Constants.MechanismConstants.elevationKp,
+            Constants.MechanismConstants.ElevationConstants.elevationKp,
             0,
-            Constants.MechanismConstants.elevationKd,
+            Constants.MechanismConstants.ElevationConstants.elevationKd,
             0);
 
     /**
@@ -154,8 +158,9 @@ public class ElevationIOSpark implements ElevationIO {
      */
     var elevationTwoConfig = new SparkMaxConfig();
     
-    // if it should be inverted
-    elevationTwoConfig.inverted(Constants.MechanismConstants.elevationTwoInverted);
+    // if it should be inverted  
+    elevationTwoConfig.inverted(
+        Constants.MechanismConstants.ElevationConstants.elevationTwoInverted);
     
     // do whatever the primary motor does, so no fine control of this motor needed
     elevationTwoConfig.follow(elevationSpark);
@@ -168,7 +173,7 @@ public class ElevationIOSpark implements ElevationIO {
      */
     elevationTwoConfig
         .idleMode(IdleMode.kBrake)
-        .smartCurrentLimit(Constants.MechanismConstants.elevationTwoCurrentLimit)
+        .smartCurrentLimit(Constants.MechanismConstants.ElevationConstants.elevationTwoCurrentLimit)
         .voltageCompensation(12.0);
 
     /**
@@ -180,8 +185,10 @@ public class ElevationIOSpark implements ElevationIO {
      */
     elevationTwoConfig
         .encoder
-        .positionConversionFactor(Constants.MechanismConstants.elevationEncoderPositionFactor)
-        .velocityConversionFactor(Constants.MechanismConstants.elevationEncoderVeloFactor)
+        .positionConversionFactor(
+            Constants.MechanismConstants.ElevationConstants.elevationEncoderPositionFactor)
+        .velocityConversionFactor(
+            Constants.MechanismConstants.ElevationConstants.elevationEncoderVeloFactor)
         .uvwMeasurementPeriod(20)
         .uvwAverageDepth(2);
 

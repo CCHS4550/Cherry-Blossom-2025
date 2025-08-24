@@ -41,9 +41,11 @@ public class BarrelIOSpark implements BarrelIO {
    * constructor for the barrel
    */
   public BarrelIOSpark() {
-    
-    // fully define the sparkmax and encoder
-    barrelSpark = new SparkMax(Constants.MechanismConstants.barrelCanID, MotorType.kBrushless);
+  // fully define the sparkmax and encoder  
+  barrelSpark =
+        new SparkMax(
+            Constants.MechanismConstants.BarrelConstants.barrelCanID, MotorType.kBrushless);
+
     barrelEncoder = barrelSpark.getEncoder();
     
     // declare the motors closed loop control
@@ -52,8 +54,8 @@ public class BarrelIOSpark implements BarrelIO {
     // config for the barrel motor
     var barrelConfig = new SparkMaxConfig();
     
-    // if it should be inverted
-    barrelConfig.inverted(Constants.MechanismConstants.barrelInverted);
+    // if it should be inverted  
+    barrelConfig.inverted(Constants.MechanismConstants.BarrelConstants.barrelInverted);
     
     /**
      * idleMode is Brake, stay at position when stopped
@@ -62,7 +64,7 @@ public class BarrelIOSpark implements BarrelIO {
      */
     barrelConfig
         .idleMode(IdleMode.kBrake)
-        .smartCurrentLimit(Constants.MechanismConstants.barrelCurrentLimit)
+        .smartCurrentLimit(Constants.MechanismConstants.BarrelConstants.barrelCurrentLimit)
         .voltageCompensation(12.0);
     
     /**
@@ -78,8 +80,10 @@ public class BarrelIOSpark implements BarrelIO {
      */
         barrelConfig
         .encoder
-        .positionConversionFactor(Constants.MechanismConstants.barrelEncoderPositionFactor)
-        .velocityConversionFactor(Constants.MechanismConstants.barrelEncoderVeloFactor)
+        .positionConversionFactor(
+            Constants.MechanismConstants.BarrelConstants.barrelEncoderPositionFactor)
+        .velocityConversionFactor(
+            Constants.MechanismConstants.BarrelConstants.barrelEncoderVeloFactor)
         .uvwMeasurementPeriod(20)
         .uvwAverageDepth(2);
     
@@ -100,7 +104,7 @@ public class BarrelIOSpark implements BarrelIO {
         .feedbackSensor(FeedbackSensor.kPrimaryEncoder)
         .positionWrappingEnabled(true)
         .positionWrappingInputRange(0, Math.PI * 2)
-        .pidf(Constants.MechanismConstants.barrelKp, 0, Constants.MechanismConstants.barrelKd, 0);
+
     
     /**
      * configure how often the motor receives/uses signals
@@ -109,7 +113,20 @@ public class BarrelIOSpark implements BarrelIO {
      *
      * <p>set every periodic function in the motor to 20ms the standard
      */
-        barrelConfig
+        .pidf(
+            Constants.MechanismConstants.BarrelConstants.barrelKp,
+            0,
+            Constants.MechanismConstants.BarrelConstants.barrelKd,
+            0);
+    
+    /**
+     * configure how often the motor receives/uses signals
+     *
+     * <p>set the velocity to always give output
+     *
+     * <p>set every periodic function in the motor to 20ms the standard
+     */
+    barrelConfig
         .signals
         .primaryEncoderPositionAlwaysOn(true)
         .primaryEncoderVelocityAlwaysOn(true)

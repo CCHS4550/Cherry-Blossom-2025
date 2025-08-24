@@ -1,5 +1,7 @@
 package frc.robot.Subsystems.Turret.Barrels;
 
+import static frc.robot.Constants.MechanismConstants.BarrelConstants.*;
+
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -26,17 +28,17 @@ public class Barrel extends SubsystemBase {
   public double manualControlVoltage = 3; //set to different values before switching the state to manual/test
   private Rotation2d barrelAngle = Rotation2d.kZero; // desired rotation to index the barrel to
   public boolean isAtAngle = true; //tracks if the barrel is at the desired index angle, so the external command that calls index knows when to move on
-
-  // feed forward control
-  private SimpleMotorFeedforward veloFF = new SimpleMotorFeedforward(0, 0, 0); //feedforward to calculate voltage needed to get to the given setpoint of the trapezoidal motion profile
   
-  // motion profiling
-  private TrapezoidProfile.Constraints constraints = new Constraints(0, 0); // max speed and acceleration of the profile, in meters per second and meters per second^2
+  // feed forward control
+  private SimpleMotorFeedforward veloFF =
+      new SimpleMotorFeedforward(barrelFFKs, barrelFFKv, barrelFFKa); //feedforward to calculate voltage needed to get to the given setpoint of the trapezoidal motion profile
+  private TrapezoidProfile.Constraints constraints =
+      new Constraints(barrelTrapezoidMaxVelo, barrelTrapezoidMaxAccel); // max speed and acceleration of the profile, in meters per second and meters per second^2
   private TrapezoidProfile profile = new TrapezoidProfile(constraints); // create the profile
   private TrapezoidProfile.State state = new State(); // our current state, that will be updated by the profile into our desired checkpoint on the way to the goal, which we will then get to
   private TrapezoidProfile.State goal = new State(); // our desired state
-
-  // state we want the barrel to be in
+  
+   // state we want the barrel to be in
   public enum wantedBarrelState {
     CHARACTERIZATION, // not going to code this part b/c pid constants already found and there's
     // like a million sources on how to tune pid

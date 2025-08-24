@@ -1,5 +1,7 @@
 package frc.robot.Subsystems.Turret.Rotation;
 
+import static frc.robot.Constants.MechanismConstants.RotationConstants.*;
+
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -15,7 +17,35 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
  * creates a rotation than go spin freely or go to a robot oriented or field oriented angle
  */
 public class Rotation extends SubsystemBase {
+
   private final RotationIO io; // the interface used by rotation, will bbe defined as a barrelIOSpark if real
+
+  private final RotationIO io;
+
+  private final RotationIOInputsAutoLogged inputs = new RotationIOInputsAutoLogged();
+
+  public double manualControlVoltage = 3;
+  public Rotation2d rotationRadiansBotOriented;
+  public Rotation2d robotOrientation;
+  public double robotYawVelo;
+
+  private SimpleMotorFeedforward veloFF =
+      new SimpleMotorFeedforward(rotationFFKs, rotationFFKv, rotationFFKa);
+  private TrapezoidProfile.Constraints constraints =
+      new Constraints(rotationTrapezoidMaxVelo, rotationTrapezoidMaxAccel);
+  private TrapezoidProfile profile = new TrapezoidProfile(constraints);
+  private TrapezoidProfile.State state = new State();
+  private TrapezoidProfile.State goal = new State();
+
+  public enum wantedRotationState {
+    CHARACTERIZATION, // not going to code this part b/c pid constants already found and there's
+    // like a million sources on how to tune pid
+    MANUAL,
+    ROBOT_ORIENTED_ANGLE,
+    FIELD_ORIENTED_ANGLE,
+    IDLE
+  }
+
 
   private final RotationIOInputsAutoLogged inputs = new RotationIOInputsAutoLogged(); // logged inputs of the rotation
 
@@ -168,6 +198,23 @@ public class Rotation extends SubsystemBase {
     public void updateFieldOrientedAngle(){
       double unwrappedRadians = (robotOrientation.plus(Rotation2d.fromRadians(inputs.rotationPositionRad))).getRadians(); // findsd the angle by combining the robot relative rotation with the bots rotation
       rotationRadiansFieldOriented = Rotation2d.fromRadians(wrapRadians(unwrappedRadians)); // wraps the value between 0 and 2pi
+
+  public void applyStates() {
+    switch (SystemState) {
+      case CHARACTERIZATION:
+        break;
+      case MANUAL: // will always move while manual is called, switch state to idle to stop movement
+        io.setRotationOpenLoop(manualControlVoltage);
+        break;
+      case ROBOT_ORIENTED_ANGLE:
+        runNonAdjustedAngle();
+        break;
+      case FIELD_ORIENTED_ANGLE:
+        runRobotAdjustedAngle();
+        break;
+      case IDLE:
+        break;
+
     }
   
     /** redundant we can kill this  */
@@ -189,11 +236,12 @@ public class Rotation extends SubsystemBase {
       // find our next checkpoint 0.02 seconds after our state
       state = profile.calculate(0.02, state, goal);
 
+
       // calculate the voltage necesary to meet the checkpoint's velocity
       double arbFF = veloFF.calculate(state.velocity);
       
       // go to the checkpoint, while adding the feed forward value
-      io.setRotationPos(optomizedAngle, arbFF);
+      io.setRotationPos(Rotation2d.fromRadians(state.position), arbFF);
     }
 
     /** sets the optomizes our wanted angle, then creates a motion profile and feedforward to go to it 

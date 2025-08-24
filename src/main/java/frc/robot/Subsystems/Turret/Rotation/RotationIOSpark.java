@@ -41,8 +41,12 @@ public class RotationIOSpark implements RotationIO {
    * constructor for rotation
    */
   public RotationIOSpark() {
-    // fully define rotation spark and encoder
-    rotationSpark = new SparkMax(Constants.MechanismConstants.rotationCanID, MotorType.kBrushless);
+
+
+    // fully define rotation spark and encoder  
+    rotationSpark =
+        new SparkMax(
+            Constants.MechanismConstants.RotationConstants.rotationCanID, MotorType.kBrushless);
     rotationEncoder = rotationSpark.getEncoder();
     
     // declare the encoders closed loop control
@@ -50,9 +54,10 @@ public class RotationIOSpark implements RotationIO {
 
     // config for the rotation motor
     var rotationConfig = new SparkMaxConfig();
-    
+
+
     // if it is inverted
-    rotationConfig.inverted(Constants.MechanismConstants.rotationInverted);
+    rotationConfig.inverted(Constants.MechanismConstants.RotationConstants.rotationInverted);
     
     /**
      * idleMode is Brake, stay at position when stopped
@@ -61,7 +66,7 @@ public class RotationIOSpark implements RotationIO {
      */
     rotationConfig
         .idleMode(IdleMode.kBrake)
-        .smartCurrentLimit(Constants.MechanismConstants.rotationCurrentLimit)
+        .smartCurrentLimit(Constants.MechanismConstants.RotationConstants.rotationCurrentLimit)
         .voltageCompensation(12.0);
 
     /**
@@ -77,8 +82,10 @@ public class RotationIOSpark implements RotationIO {
      */
     rotationConfig
         .encoder
-        .positionConversionFactor(Constants.MechanismConstants.rotationEncoderPositionFactor)
-        .velocityConversionFactor(Constants.MechanismConstants.rotationEncoderVeloFactor)
+        .positionConversionFactor(
+            Constants.MechanismConstants.RotationConstants.rotationEncoderPositionFactor)
+        .velocityConversionFactor(
+            Constants.MechanismConstants.RotationConstants.rotationEncoderVeloFactor)
         .uvwMeasurementPeriod(20)
         .uvwAverageDepth(2);
 
@@ -100,15 +107,18 @@ public class RotationIOSpark implements RotationIO {
         .positionWrappingEnabled(true)
         .positionWrappingInputRange(0, Math.PI * 2)
         .pidf(
-            Constants.MechanismConstants.rotationKp, 0, Constants.MechanismConstants.rotationKd, 0);
-    
+            Constants.MechanismConstants.RotationConstants.rotationKp,
+            0,
+            Constants.MechanismConstants.RotationConstants.rotationKd,
+            0);
+
     /**
      * configure how often the motor receives/uses signals
      *
      * <p>set the velocity to always give output
      *
      * <p>set every periodic function in the motor to 20ms the standard
-     */
+     */  
     rotationConfig
         .signals
         .primaryEncoderPositionAlwaysOn(true)
