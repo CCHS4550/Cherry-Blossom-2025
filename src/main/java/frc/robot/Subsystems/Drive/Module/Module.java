@@ -9,35 +9,30 @@ import frc.robot.Constants;
 import org.littletonrobotics.junction.Logger;
 
 /**
- * creates an instance of a module that can run states and report odometry information
- * call 4 times for all 4 modules
- * 0 -> front left
- * 1-> front right
- * 2 -> back left
- * 3 -> back right
+ * creates an instance of a module that can run states and report odometry information call 4 times
+ * for all 4 modules 0 -> front left 1-> front right 2 -> back left 3 -> back right
  */
 public class Module {
-  private final ModuleIO io;// the interface used by the module. Will be defined ModuleIOSpark if real or ModuleIOSim if sim in robot
-  private final ModuleIOInputsAutoLogged inputs = new ModuleIOInputsAutoLogged(); // the logged inputs of the module
-  private final int index;// which module it is. 0-3
+  private final ModuleIO
+      io; // the interface used by the module. Will be defined ModuleIOSpark if real or ModuleIOSim
+  // if sim in robot
+  private final ModuleIOInputsAutoLogged inputs =
+      new ModuleIOInputsAutoLogged(); // the logged inputs of the module
+  private final int index; // which module it is. 0-3
 
   // alerts for motor disconnection
   private final Alert driveDCAlert;
   private final Alert turnDCAlert;
-  
-  //array of our module positions
+
+  // array of our module positions
   private SwerveModulePosition[] odometryPositions = new SwerveModulePosition[] {};
 
   /**
    * Constructor for the module
-   * 
+   *
    * @param io instance of ModuleIO or classes implementing ModuleIO
-   * 
-   * @param index which module is being created
-   * 0 -> front left
-   * 1-> front right
-   * 2 -> back left
-   * 3 -> back right
+   * @param index which module is being created 0 -> front left 1-> front right 2 -> back left 3 ->
+   *     back right
    */
   public Module(ModuleIO io, int index) {
     this.io = io;
@@ -52,10 +47,10 @@ public class Module {
   }
   /**
    * will be called periodically from drive, but won't actually call itself periodically
-   * advantagekits logging is NOT thread safe, so call using locks or syncronized
-  */
+   * advantagekits logging as well as updating information is NOT thread safe, so call using locks or syncronized
+   */
   public void periodic() {
-    //update autologged inputs
+    // update autologged inputs
     io.updateInputs(inputs);
     Logger.processInputs("Drive/Module" + Integer.toString(index), inputs);
 
@@ -66,11 +61,13 @@ public class Module {
     // fill the odometryPositions array with the module information at givern sample
     for (int i = 0; i < sampleCount; i++) {
       double posMeters =
-          inputs.odometryDrivePositionsRad[i] * Constants.DriveConstants.wheelRadiusMeters; // calculate how far the drive motor has driven
+          inputs.odometryDrivePositionsRad[i]
+              * Constants.DriveConstants
+                  .wheelRadiusMeters; // calculate how far the drive motor has driven
       Rotation2d angle = inputs.odometryTurnPositions[i]; // find the turn angle
       odometryPositions[i] = new SwerveModulePosition(posMeters, angle); // add to the array
     }
-    
+
     // update alerts
     driveDCAlert.set(!inputs.driveConnected);
     turnDCAlert.set(!inputs.turnConnected);
@@ -78,29 +75,29 @@ public class Module {
 
   /**
    * sets the module to a desired speed and direction
-   * 
+   *
    * @param state the speed(meters/sec) and angle with which to set the swerve module
    */
-
   public void runSwerveState(SwerveModuleState state) {
-    state.optimize(getAngle()); //reverses the direction so the turn never goes the long way around
+    state.optimize(getAngle()); // reverses the direction so the turn never goes the long way around
     state.cosineScale(inputs.turnPosition); // smooths out the direction change
 
-    //set the motors
+    // set the motors
     io.setDriveVelo(state.speedMetersPerSecond / Constants.DriveConstants.wheelRadiusMeters);
     io.setTurnPos(state.angle);
   }
 
-  /**runs a motor voltage for characterization
-   * 
+  /**
+   * runs a motor voltage for characterization
+   *
    * @param output volts
-  */
+   */
   public void runCharacterization(double output) {
     io.setDriveOpenLoop(output);
     io.setTurnPos(new Rotation2d());
   }
 
-  //halts movement of motors
+  // halts movement of motors
   public void stop() {
     io.setDriveOpenLoop(0.0);
     io.setTurnOpenLoop(0.0);

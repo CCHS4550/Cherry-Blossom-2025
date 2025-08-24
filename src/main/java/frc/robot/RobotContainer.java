@@ -26,16 +26,21 @@ import frc.robot.Subsystems.Turret.Rotation.RotationIOSpark;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
 public class RobotContainer {
+  
+  // subclasses of the robot
   private final Drive drive;
   private final Barrel barrels;
   private final Elevation elevation;
   private final Pneumatics pneumatics;
   private final Rotation rotation;
 
+  // superstructure
   private final Superstructure superstructure;
 
+  //controller used
   CommandXboxController primaryController = new CommandXboxController(0);
 
+  // autochooser
   private final LoggedDashboardChooser<Command> autoChooser;
 
   public RobotContainer() {
@@ -54,8 +59,10 @@ public class RobotContainer {
         pneumatics = new Pneumatics(new PneumaticsIOHardware());
         rotation = new Rotation(new RotationIOSpark());
 
+        // create the super structure
         superstructure = new Superstructure(pneumatics, barrels, elevation, rotation, drive);
 
+        // configure control schemes
         DriveScheme.configure(drive, primaryController);
         MechanismScheme.Configure(superstructure, primaryController);
         break;

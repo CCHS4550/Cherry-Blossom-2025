@@ -3,9 +3,10 @@ package frc.robot.Subsystems.Drive.Module;
 import edu.wpi.first.math.geometry.Rotation2d;
 import org.littletonrobotics.junction.AutoLog;
 
-//creates an interface for hardware to fully define
+// creates an interface for hardware to fully define
 public interface ModuleIO {
-  // automatically generates a class using clonable that logs the following variables with advantage scope
+  // automatically generates a class using clonable that logs the following variables with advantage
+  // scope
   @AutoLog
   public static class ModuleIOInputs {
     // tracking variables for the drive motor

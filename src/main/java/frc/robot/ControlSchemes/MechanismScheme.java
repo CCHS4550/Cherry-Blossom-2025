@@ -5,14 +5,24 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.Subsystems.Superstructure;
 import frc.robot.Subsystems.Superstructure.wantedState;
 
+
+/**
+ * how our controller or button board interacts with the superstructure
+ */
 public class MechanismScheme {
 
+  /**
+   * creates the control scheme
+   */
   public static void Configure(Superstructure superstructure, CommandXboxController controller) {
     configureButtons(superstructure, controller);
   }
 
+  /** sets button bindings */
   public static void configureButtons(
       Superstructure superstructure, CommandXboxController controller) {
+
+    // go up on DPAD UP
     controller
         .povUp()
         .onTrue(
@@ -22,6 +32,7 @@ public class MechanismScheme {
         .povUp()
         .onFalse(new InstantCommand(() -> superstructure.setWantedState(wantedState.IDLE)));
 
+    // go down on DPAD DOWN
     controller
         .povDown()
         .onTrue(
@@ -31,6 +42,7 @@ public class MechanismScheme {
         .povDown()
         .onFalse(new InstantCommand(() -> superstructure.setWantedState(wantedState.IDLE)));
 
+    // go right on DPAD right
     controller
         .povRight()
         .onTrue(
@@ -40,6 +52,7 @@ public class MechanismScheme {
         .povRight()
         .onFalse(new InstantCommand(() -> superstructure.setWantedState(wantedState.IDLE)));
 
+    // go left on DPAD left
     controller
         .povLeft()
         .onTrue(
@@ -50,10 +63,12 @@ public class MechanismScheme {
         .povLeft()
         .onFalse(new InstantCommand(() -> superstructure.setWantedState(wantedState.IDLE)));
 
+    // shoot one on right trigger
     controller
         .rightTrigger()
         .onTrue(new InstantCommand(() -> superstructure.setWantedState(wantedState.SHOOT_ONE)));
 
+    // shoot all on both press
     controller
         .rightTrigger()
         .and(controller.leftTrigger())
