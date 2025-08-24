@@ -26,66 +26,71 @@ import java.util.function.DoubleSupplier;
 // define a class that uses the interface BarrelIO
 // used to initiate the hardware used on the row and define the interface methods
 public class ElevationIOSpark implements ElevationIO {
-
+  
   // the limit switch
   private final DigitalInput limitSwitch;
-
+  
   // the motors and encoders of the elevation subsystem
   private final SparkBase elevationSpark;
   private final SparkBase elevationSparkTwo;
   private final RelativeEncoder elevationEncoder;
   private final RelativeEncoder elevationEncoderTwo;
-
-  // closed loop control, but only one because the other motor will simply follow
+  
+  //closed loop control, but only one because the other motor will simply follow
   private final SparkClosedLoopController elevationController;
-
-  // checks if the sparks are disconnected
+  
+  //checks if the sparks are disconnected
   private final Debouncer elevationDebouncer = new Debouncer(0.5);
   private final Debouncer elevationDebouncerTwo = new Debouncer(0.5);
 
-  /** constructor for the elevation subsystem */
+  /**
+   * constructor for the elevation subsystem
+   */
   public ElevationIOSpark() {
-
+    
     // fully define the elevation motors
     elevationSpark =
-        new SparkMax(Constants.MechanismConstants.elevationCanID, MotorType.kBrushless);
+        new SparkMax(
+            Constants.MechanismConstants.ElevationConstants.elevationCanID, MotorType.kBrushless);
     elevationSparkTwo =
-        new SparkMax(Constants.MechanismConstants.elevationCanIDTwo, MotorType.kBrushless);
-
+        new SparkMax(
+            Constants.MechanismConstants.ElevationConstants.elevationCanIDTwo,
+            MotorType.kBrushless);
     // fully define the limit switch
-    limitSwitch = new DigitalInput(Constants.MechanismConstants.elevationLimitSwitchID);
-
+    limitSwitch =
+        new DigitalInput(Constants.MechanismConstants.ElevationConstants.elevationLimitSwitchID);
     // fully define the encoders
     elevationEncoder = elevationSpark.getEncoder();
     elevationEncoderTwo = elevationSparkTwo.getEncoder();
-
+    
     // declare the elevation's closed loop control
     elevationController = elevationSpark.getClosedLoopController();
 
-    // config for the primary motor of the elevation subsystem, this is the one that will do all the
-    // pid calcs and be called for information
+    //config for the primary motor of the elevation subsystem, this is the one that will do all the pid calcs and be called for information
     var elevationConfig = new SparkMaxConfig();
-
-    // if it should be inverted
-    elevationConfig.inverted(Constants.MechanismConstants.elevationInverted);
-
+    
+    // if it should be inverted  
+    elevationConfig.inverted(Constants.MechanismConstants.ElevationConstants.elevationInverted);
+    
     /**
-     * idleMode is Brake, stay at position when stopped set the smart current limit to avoid going
-     * over what the motor can handle
-     *
-     * <p>voltage compensation = 12 because working with 12v car battery
-     */
+     * idleMode is Brake, stay at position when stopped
+     * set the smart current limit to avoid going over what the motor can handle 
+     * 
+     * <p> voltage compensation = 12 because working with 12v car battery
+     */  
     elevationConfig
         .idleMode(IdleMode.kBrake)
-        .smartCurrentLimit(Constants.MechanismConstants.elevationCurrentLimit)
+        .smartCurrentLimit(Constants.MechanismConstants.ElevationConstants.elevationCurrentLimit)
         .voltageCompensation(12.0);
-
+    
     /**
-     * configures the encoder
-     *
-     * <p>position factor converts rotations to radians while accounting for any gearing
-     *
-     * <p>velocity factor converts rotations/min to radians/sec while accounting for any gearing
+     * configures the encoder 
+     * 
+     * <p> position factor converts rotations to radians while accounting
+     * for any gearing 
+     * 
+     * <p>velocity factor converts rotations/min to radians/sec while accounting for
+     * any gearing
      *
      * <p>this is now automatically applied anytime we request motor information
      *
@@ -93,8 +98,10 @@ public class ElevationIOSpark implements ElevationIO {
      */
     elevationConfig
         .encoder
-        .positionConversionFactor(Constants.MechanismConstants.elevationEncoderPositionFactor)
-        .velocityConversionFactor(Constants.MechanismConstants.elevationEncoderVeloFactor)
+        .positionConversionFactor(
+            Constants.MechanismConstants.ElevationConstants.elevationEncoderPositionFactor)
+        .velocityConversionFactor(
+            Constants.MechanismConstants.ElevationConstants.elevationEncoderVeloFactor)
         .uvwMeasurementPeriod(20)
         .uvwAverageDepth(2);
 
@@ -103,8 +110,8 @@ public class ElevationIOSpark implements ElevationIO {
      * SparkClosedLoopController defaults to slot 0 if not specified
      *
      * <p>feedbackSensor sets our sensor to the relative encoder
-     *
-     * <p>no position wrapping because if the elevation goes 360 degrees something is very wrong
+     * 
+     * no position wrapping because if the elevation goes 360 degrees something is very wrong
      *
      * <p>then we set the pid configs ff = 0 because they do not take into account ks and their calc
      * isnt amazing instead we will implement ff as an arbff to be added later
@@ -114,9 +121,9 @@ public class ElevationIOSpark implements ElevationIO {
         .feedbackSensor(FeedbackSensor.kPrimaryEncoder)
         .positionWrappingEnabled(false)
         .pidf(
-            Constants.MechanismConstants.elevationKp,
+            Constants.MechanismConstants.ElevationConstants.elevationKp,
             0,
-            Constants.MechanismConstants.elevationKd,
+            Constants.MechanismConstants.ElevationConstants.elevationKd,
             0);
 
     /**
@@ -142,28 +149,31 @@ public class ElevationIOSpark implements ElevationIO {
         () ->
             elevationSpark.configure(
                 elevationConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters));
-
+    
     /** set motor position to 0, retrying if faulting */
     makeItWork(elevationSpark, 5, () -> elevationEncoder.setPosition(0.0));
 
-    /** configuration for the secondary elevation motor */
+    /**
+     * configuration for the secondary elevation motor
+     */
     var elevationTwoConfig = new SparkMaxConfig();
-
-    // if it should be inverted
-    elevationTwoConfig.inverted(Constants.MechanismConstants.elevationTwoInverted);
-
+    
+    // if it should be inverted  
+    elevationTwoConfig.inverted(
+        Constants.MechanismConstants.ElevationConstants.elevationTwoInverted);
+    
     // do whatever the primary motor does, so no fine control of this motor needed
     elevationTwoConfig.follow(elevationSpark);
 
     /**
-     * idleMode is Brake, stay at position when stopped set the smart current limit to avoid going
-     * over what the motor can handle
-     *
-     * <p>voltage compensation = 12 because working with 12v car battery
+     * idleMode is Brake, stay at position when stopped
+     * set the smart current limit to avoid going over what the motor can handle 
+     * 
+     * <p> voltage compensation = 12 because working with 12v car battery
      */
     elevationTwoConfig
         .idleMode(IdleMode.kBrake)
-        .smartCurrentLimit(Constants.MechanismConstants.elevationTwoCurrentLimit)
+        .smartCurrentLimit(Constants.MechanismConstants.ElevationConstants.elevationTwoCurrentLimit)
         .voltageCompensation(12.0);
 
     /**
@@ -175,8 +185,10 @@ public class ElevationIOSpark implements ElevationIO {
      */
     elevationTwoConfig
         .encoder
-        .positionConversionFactor(Constants.MechanismConstants.elevationEncoderPositionFactor)
-        .velocityConversionFactor(Constants.MechanismConstants.elevationEncoderVeloFactor)
+        .positionConversionFactor(
+            Constants.MechanismConstants.ElevationConstants.elevationEncoderPositionFactor)
+        .velocityConversionFactor(
+            Constants.MechanismConstants.ElevationConstants.elevationEncoderVeloFactor)
         .uvwMeasurementPeriod(20)
         .uvwAverageDepth(2);
 
@@ -212,7 +224,7 @@ public class ElevationIOSpark implements ElevationIO {
 
   @Override
   public void updateInputs(ElevationIOInputs inputs) {
-
+    
     // update primary motor values, only accepting if no sticky fault present
     SparkUtil.stickyFault = false;
     ifOk(
@@ -261,8 +273,8 @@ public class ElevationIOSpark implements ElevationIO {
 
   /**
    * sets motor to specified open loop value
-   *
-   * <p>the secondary motor follows the primary one, so only need to set the primary motor
+   * 
+   * <p> the secondary motor follows the primary one, so only need to set the primary motor
    *
    * @param output the volts to set
    */
@@ -270,15 +282,17 @@ public class ElevationIOSpark implements ElevationIO {
   public void setElevationOpenLoop(double voltage) {
     elevationSpark.setVoltage(voltage);
   }
-
+  
   /**
    * set turn motor to a desire angle, with an arbitrary feed forward to be calculated later
-   *
-   * <p>the secondary motor follows the primary one, so only need to set the primary motor
+   * 
+   * <p> the secondary motor follows the primary one, so only need to set the primary motor
    *
    * @param rotation desire module angle in radians
+   * 
    * @param arbFF the arbitrary ff unit in volts, to be added to the elevation pid output
    */
+
   @Override
   public void setElevationPos(Rotation2d angle, double arbFF) {
     elevationController.setReference(
