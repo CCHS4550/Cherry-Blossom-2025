@@ -36,6 +36,7 @@ public class SparkUtil {
     doubleConsumers.accept(nums);
   }
 
+  // returns if a spark max has had an error
   public static boolean isOK(SparkBase spark) {
     boolean isFine = true;
     if (spark.getLastError() != REVLibError.kOk) {
@@ -44,6 +45,7 @@ public class SparkUtil {
     return isFine;
   }
 
+  // returns if a generic spark object has had an error
   public static boolean isOK(SparkBase[] spark) {
     boolean isFine = true;
     for (int i = 0; i < spark.length; i++) {
@@ -55,6 +57,7 @@ public class SparkUtil {
     return isFine;
   }
 
+  // repeatedly calls a command until there is no error in running it
   public static void makeItWork(SparkBase spark, int maxAttempts, Supplier<REVLibError> command) {
     for (int i = 0; i < maxAttempts; i++) {
       var error = command.get();
