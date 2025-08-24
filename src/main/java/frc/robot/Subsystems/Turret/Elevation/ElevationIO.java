@@ -24,7 +24,7 @@ public interface ElevationIO {
     public double elevationTwoAppliedVolts = 0.0;
     public double elevationTwoCurrentAmps = 0.0;
 
-    //tracking the limit swithc
+    // tracking the limit swithc
     public boolean limitSwitchHit = false;
   }
 

@@ -113,9 +113,8 @@ public class ModuleIOSpark implements ModuleIO {
     }
 
     /**
-     * idleMode is Brake, stay at position when stopped
-     * set the smart current limit to avoid going over what the motor can handle voltage compensation = 12 because
-     * working with 12v car battery
+     * idleMode is Brake, stay at position when stopped set the smart current limit to avoid going
+     * over what the motor can handle voltage compensation = 12 because working with 12v car battery
      */
     turnConfig
         .idleMode(IdleMode.kBrake)

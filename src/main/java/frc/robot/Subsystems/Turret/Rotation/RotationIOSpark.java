@@ -26,38 +26,35 @@ import java.util.function.DoubleSupplier;
 // define a class that uses the interface RotationIO
 // used to initiate the hardware used on the row and define the interface methods
 public class RotationIOSpark implements RotationIO {
-  
+
   // the motor and encoder
   private final SparkBase rotationSpark;
   private final RelativeEncoder rotationEncoder;
-  
+
   // closed loop control for the rotation
   private final SparkClosedLoopController rotationController;
-  
+
   // check if the rotation motor is disconnected
   private final Debouncer rotationDebouncer = new Debouncer(0.5);
 
-  /**
-   * constructor for rotation
-   */
+  /** constructor for rotation */
   public RotationIOSpark() {
     // fully define rotation spark and encoder
     rotationSpark = new SparkMax(Constants.MechanismConstants.rotationCanID, MotorType.kBrushless);
     rotationEncoder = rotationSpark.getEncoder();
-    
+
     // declare the encoders closed loop control
     rotationController = rotationSpark.getClosedLoopController();
 
     // config for the rotation motor
     var rotationConfig = new SparkMaxConfig();
-    
+
     // if it is inverted
     rotationConfig.inverted(Constants.MechanismConstants.rotationInverted);
-    
+
     /**
-     * idleMode is Brake, stay at position when stopped
-     * set the smart current limit to avoid going over what the motor can handle voltage compensation = 12 because
-     * working with 12v car battery
+     * idleMode is Brake, stay at position when stopped set the smart current limit to avoid going
+     * over what the motor can handle voltage compensation = 12 because working with 12v car battery
      */
     rotationConfig
         .idleMode(IdleMode.kBrake)
@@ -65,11 +62,10 @@ public class RotationIOSpark implements RotationIO {
         .voltageCompensation(12.0);
 
     /**
-     * configures the encoder position factor converts rotations to radians while accounting
-     * for any gearing 
-     * 
-     * <p>velocity factor converts rotations/min to radians/sec while accounting for
-     * any gearing
+     * configures the encoder position factor converts rotations to radians while accounting for any
+     * gearing
+     *
+     * <p>velocity factor converts rotations/min to radians/sec while accounting for any gearing
      *
      * <p>this is now automatically applied anytime we request motor information
      *
@@ -86,10 +82,9 @@ public class RotationIOSpark implements RotationIO {
      * each sparkmax supports up to 4 slots for a preconfigured pid that it can then call using
      * SparkClosedLoopController defaults to slot 0 if not specified
      *
-     * <p>feedbackSensor sets our sensor to the relative encoder 
-     * 
-     * position wrapping makes it loop
-     * from the given range which we set to 0 and 2pi
+     * <p>feedbackSensor sets our sensor to the relative encoder
+     *
+     * <p>position wrapping makes it loop from the given range which we set to 0 and 2pi
      *
      * <p>then we set the pid configs ff = 0 because they do not take into account ks and their calc
      * isnt amazing instead we will implement ff as an arbff to be added later
@@ -101,7 +96,7 @@ public class RotationIOSpark implements RotationIO {
         .positionWrappingInputRange(0, Math.PI * 2)
         .pidf(
             Constants.MechanismConstants.rotationKp, 0, Constants.MechanismConstants.rotationKd, 0);
-    
+
     /**
      * configure how often the motor receives/uses signals
      *
@@ -125,15 +120,15 @@ public class RotationIOSpark implements RotationIO {
         () ->
             rotationSpark.configure(
                 rotationConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters));
-    
+
     /** sets the encoder to 0, retrying if faulting */
     makeItWork(rotationSpark, 5, () -> rotationEncoder.setPosition(0.0));
   }
 
   @Override
   public void updateInputs(RotationIOInputs inputs) {
-    
-    //update rotation motor values, only accepting if no stick fault present
+
+    // update rotation motor values, only accepting if no stick fault present
     SparkUtil.stickyFault = false;
     ifOk(
         rotationSpark, rotationEncoder::getPosition, (value) -> inputs.rotationPositionRad = value);
@@ -177,7 +172,6 @@ public class RotationIOSpark implements RotationIO {
    * set motor to a desire angle, with an arbitrary feed forward to be calculated later
    *
    * @param rotation desire rotation angle in radians
-   * 
    * @param arbFF the arbitrary ff unit in volts, to be added to the barrel pid output
    */
   @Override

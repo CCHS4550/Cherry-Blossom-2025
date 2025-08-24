@@ -15,8 +15,8 @@ import java.util.Queue;
 
 /** IO implementation for Pigeon 2. */
 public class GyroPigeon implements GyroIO {
-  
-  //initiates a pigeon
+
+  // initiates a pigeon
   private final Pigeon2 pigeon = new Pigeon2(Constants.DriveConstants.pigeonCanId);
 
   // creates information lists
@@ -28,17 +28,17 @@ public class GyroPigeon implements GyroIO {
   public GyroPigeon() {
     // configure the pigeon
     pigeon.getConfigurator().apply(new Pigeon2Configuration());
-    
+
     // set its rotation to 0
     pigeon.getConfigurator().setYaw(0.0);
-    
+
     // set update frquencies
     yaw.setUpdateFrequency(Constants.DriveConstants.odometryFrequency);
     yawVelocity.setUpdateFrequency(50.0);
-    
-    //reduce the Bus uitlization by disabling/reducing unused signals
+
+    // reduce the Bus uitlization by disabling/reducing unused signals
     pigeon.optimizeBusUtilization();
-    
+
     // make the queues that are filled by the odometry thread
     // odometry thread will periodically fill these queues
     yawTimestampQueue = SparkOdometryThread.getInstance().makeTimeQueue();
@@ -52,7 +52,7 @@ public class GyroPigeon implements GyroIO {
   public void updateInputs(GyroIOInputs inputs) {
     // if connected
     inputs.connected = BaseStatusSignal.refreshAll(yaw, yawVelocity).equals(StatusCode.OK);
-    
+
     // log position and velocity
     inputs.yawPosition = Rotation2d.fromDegrees(yaw.getValueAsDouble());
     inputs.yawVelocityRadPerSec = Units.degreesToRadians(yawVelocity.getValueAsDouble());

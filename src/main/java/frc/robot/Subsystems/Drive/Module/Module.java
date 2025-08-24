@@ -47,7 +47,8 @@ public class Module {
   }
   /**
    * will be called periodically from drive, but won't actually call itself periodically
-   * advantagekits logging as well as updating information is NOT thread safe, so call using locks or syncronized
+   * advantagekits logging as well as updating information is NOT thread safe, so call using locks
+   * or syncronized
    */
   public void periodic() {
     // update autologged inputs

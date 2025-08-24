@@ -7,15 +7,14 @@ import frc.robot.Subsystems.Drive.Drive;
 import frc.robot.Subsystems.Drive.Drive.WantedState;
 import java.util.function.DoubleSupplier;
 
-/**
- * how a controller interacts with the drive train
- */
+/** how a controller interacts with the drive train */
 public class DriveScheme {
   // slow mode or fast mode
   private static DoubleSupplier driveSpeedModifier = () -> 0.4;
 
   public static void configure(Drive drive, CommandXboxController controller) {
-    // default command will periodically run in drive train, in this case it periodically updates our joystick values
+    // default command will periodically run in drive train, in this case it periodically updates
+    // our joystick values
     drive.setDefaultCommand(
         new ParallelCommandGroup(
             Commands.run(
@@ -37,7 +36,7 @@ public class DriveScheme {
 
   // sets button bindings
   private static void configureButtons(CommandXboxController controller, Drive drive) {
-    
+
     // slow mode and fast mode
     controller.rightBumper().onTrue(Commands.runOnce(() -> setFastMode()));
     controller.rightBumper().onFalse(Commands.runOnce(() -> setSlowMode()));

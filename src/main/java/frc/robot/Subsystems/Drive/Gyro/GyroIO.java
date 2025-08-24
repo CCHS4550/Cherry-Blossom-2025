@@ -5,7 +5,7 @@ import org.littletonrobotics.junction.AutoLog;
 
 // creates an interface for hardware to fully defin
 public interface GyroIO {
-  
+
   // automatically generates a class using clonable that logs the following variables with advantage
   // scope
   @AutoLog

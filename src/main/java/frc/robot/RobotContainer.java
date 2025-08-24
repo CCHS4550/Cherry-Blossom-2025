@@ -26,7 +26,7 @@ import frc.robot.Subsystems.Turret.Rotation.RotationIOSpark;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
 public class RobotContainer {
-  
+
   // subclasses of the robot
   private final Drive drive;
   private final Barrel barrels;
@@ -37,7 +37,7 @@ public class RobotContainer {
   // superstructure
   private final Superstructure superstructure;
 
-  //controller used
+  // controller used
   CommandXboxController primaryController = new CommandXboxController(0);
 
   // autochooser

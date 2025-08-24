@@ -5,7 +5,6 @@ import edu.wpi.first.wpilibj.Notifier;
 import edu.wpi.first.wpilibj.RobotController;
 import frc.robot.Constants;
 import frc.robot.Util.SparkUtil;
-
 import java.util.ArrayList;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -13,17 +12,17 @@ import java.util.function.DoubleSupplier;
 
 /**
  * Ripped directly from mechanical advantage
- * 
- * Provides an interface for asynchronously reading high-frequency measurements to a set of queues.
- * 
- * Includes thread safe impementation
+ *
+ * <p>Provides an interface for asynchronously reading high-frequency measurements to a set of
+ * queues.
+ *
+ * <p>Includes thread safe impementation
  *
  * <p>This version includes an overload for Spark signals, which checks for errors to ensure that
  * all measurements in the sample are valid.
  */
 public class SparkOdometryThread {
-  
-  
+
   private final ArrayList<SparkBase> sparks = new ArrayList<>();
   private final ArrayList<DoubleSupplier> sparkSignals = new ArrayList<>();
   private final ArrayList<DoubleSupplier> genericSignals = new ArrayList<>();
@@ -32,9 +31,13 @@ public class SparkOdometryThread {
   private final ArrayList<Queue<Double>> timeQueue = new ArrayList<>();
 
   private static SparkOdometryThread instance = null;
-  private Notifier notifier = new Notifier(this::run); //when we set the notifier, the robot will periodically run the given method(run) in a seperate thread
+  private Notifier notifier =
+      new Notifier(
+          this::run); // when we set the notifier, the robot will periodically run the given
+  // method(run) in a seperate thread
 
-  // implementation of singleton because of the way this creates a new thread to periodically function
+  // implementation of singleton because of the way this creates a new thread to periodically
+  // function
   public static SparkOdometryThread getInstance() {
     if (instance != null) {
       return instance;
@@ -51,20 +54,24 @@ public class SparkOdometryThread {
 
   public void start() {
     if (timeQueue.size() > 0) {
-      notifier.startPeriodic(1.0 / Constants.DriveConstants.odometryFrequency); // makes the notifier begin running periodically at the desired frequency
+      notifier.startPeriodic(
+          1.0
+              / Constants.DriveConstants
+                  .odometryFrequency); // makes the notifier begin running periodically at the
+      // desired frequency
     }
   }
-  
+
   /** Registers a Spark signal to be read from the thread. */
   public Queue<Double> registerSparkSignal(SparkBase spark, DoubleSupplier signal) {
     Queue<Double> queue = new ArrayBlockingQueue<>(20);
-     Drive.odometryLock.lock();
+    Drive.odometryLock.lock();
     try {
       sparks.add(spark);
       sparkSignals.add(signal);
       sparkQueue.add(queue);
     } finally {
-       Drive.odometryLock.unlock();
+      Drive.odometryLock.unlock();
     }
     return queue;
   }
@@ -72,12 +79,12 @@ public class SparkOdometryThread {
   /** Registers a generic signal to be read from the thread. */
   public Queue<Double> registerGenericSignal(DoubleSupplier signal) {
     Queue<Double> queue = new ArrayBlockingQueue<>(20);
-     Drive.odometryLock.lock();
+    Drive.odometryLock.lock();
     try {
       genericSignals.add(signal);
       genericQueue.add(queue);
     } finally {
-       Drive.odometryLock.unlock();
+      Drive.odometryLock.unlock();
     }
     return queue;
   }
@@ -85,7 +92,7 @@ public class SparkOdometryThread {
   /** Returns a new queue that returns timestamp values for each sample. */
   public Queue<Double> makeTimeQueue() {
     Queue<Double> queue = new ArrayBlockingQueue<>(20);
-      Drive.odometryLock.lock();
+    Drive.odometryLock.lock();
     try {
       timeQueue.add(queue);
     } finally {
@@ -100,7 +107,7 @@ public class SparkOdometryThread {
     try {
       // Get sample timestamp
       double timestamp = RobotController.getFPGATime() / 1e6;
-      
+
       // Read Spark values, mark invalid in case of error
       boolean good = true;
       double[] sparkValues = new double[sparkSignals.size()];
@@ -110,7 +117,7 @@ public class SparkOdometryThread {
           good = false;
         }
       }
-      
+
       // If valid, add values to queues
       if (good) {
         for (int i = 0; i < sparkSignals.size(); i++) {
@@ -120,7 +127,7 @@ public class SparkOdometryThread {
         }
       }
     } finally {
-       Drive.odometryLock.unlock();
+      Drive.odometryLock.unlock();
     }
   }
 }

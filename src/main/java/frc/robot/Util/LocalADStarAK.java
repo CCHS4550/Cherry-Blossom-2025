@@ -27,12 +27,13 @@ import org.littletonrobotics.junction.inputs.LoggableInputs;
 
 /**
  * Ripped straight from Mechanical Advantage
- * 
- * This is basically just a logged version of the existing local ADStar class
- * We use this for pathfinding purposes
- * 
- * If you're curious, AD* stands for always dynamic star, which is variation on a variation of Djikstras algorithm
- * It is a very greedy algorithm but is unique in its ability to adapt to new condition, and follow and initially very unoptimized path, that it then optimizes as it goes
+ *
+ * <p>This is basically just a logged version of the existing local ADStar class We use this for
+ * pathfinding purposes
+ *
+ * <p>If you're curious, AD* stands for always dynamic star, which is variation on a variation of
+ * Djikstras algorithm It is a very greedy algorithm but is unique in its ability to adapt to new
+ * condition, and follow and initially very unoptimized path, that it then optimizes as it goes
  */
 public class LocalADStarAK implements Pathfinder {
   private final ADStarIO io = new ADStarIO();

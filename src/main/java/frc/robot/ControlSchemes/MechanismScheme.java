@@ -5,15 +5,10 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.Subsystems.Superstructure;
 import frc.robot.Subsystems.Superstructure.wantedState;
 
-
-/**
- * how our controller or button board interacts with the superstructure
- */
+/** how our controller or button board interacts with the superstructure */
 public class MechanismScheme {
 
-  /**
-   * creates the control scheme
-   */
+  /** creates the control scheme */
   public static void Configure(Superstructure superstructure, CommandXboxController controller) {
     configureButtons(superstructure, controller);
   }

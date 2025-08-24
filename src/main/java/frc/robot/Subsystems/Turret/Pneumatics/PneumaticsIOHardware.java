@@ -26,15 +26,15 @@ import org.littletonrobotics.junction.Logger;
 // used to initate the hardware used and define interface methods
 // I really don't know how to work with pneumatics so don't trust
 public class PneumaticsIOHardware implements PneumaticsIO {
-  
+
   // initiate compressor and psi tracking
   private final SparkBase compressor;
   private final SparkAnalogSensor transducer;
   LinearFilter filter = LinearFilter.singlePoleIIR(0.1, 0.02);
 
-  // initiate compressor fan 
+  // initiate compressor fan
   private final Compressor compressorFan;
-  
+
   // track if connected
   private final Debouncer compressorDebouncer = new Debouncer(0.5);
 
@@ -43,12 +43,12 @@ public class PneumaticsIOHardware implements PneumaticsIO {
   private final Solenoid shootingSeal;
 
   public PneumaticsIOHardware() {
-    
-    //create the compressor and compressor fan
+
+    // create the compressor and compressor fan
     compressor = new SparkMax(Constants.PneumaticConstants.compressorCanID, MotorType.kBrushed);
     compressorFan =
         new Compressor(Constants.PneumaticConstants.compressorFanPort, PneumaticsModuleType.REVPH);
-    
+
     // create the pressure solenoid
     pressureSeal =
         new DoubleSolenoid(
@@ -57,7 +57,7 @@ public class PneumaticsIOHardware implements PneumaticsIO {
             Constants.PneumaticConstants.pressureSealForward,
             Constants.PneumaticConstants.pressureSealBackward);
 
-    // create the shooting solenoid 
+    // create the shooting solenoid
     shootingSeal =
         new Solenoid(
             Constants.PneumaticConstants.compressorFanPort,
@@ -66,17 +66,16 @@ public class PneumaticsIOHardware implements PneumaticsIO {
 
     // configure the compressor
     var compressorConfig = new SparkMaxConfig();
-    
+
     // set the inverted
     compressorConfig.inverted(Constants.PneumaticConstants.compressorInverted);
-    
+
     /**
-     * idleMode is Brake, stay at position when stopped
-     * voltage compensation = 12 because
-     * working with 12v car battery
+     * idleMode is Brake, stay at position when stopped voltage compensation = 12 because working
+     * with 12v car battery
      */
     compressorConfig.idleMode(IdleMode.kBrake).voltageCompensation(12);
-    
+
     /** configures the motor, retrying if faulting */
     SparkUtil.makeItWork(
         compressor,
@@ -98,10 +97,10 @@ public class PneumaticsIOHardware implements PneumaticsIO {
   public void updateInputs(PneumaticsIOInputs inputs) {
     // if compressor is connected
     inputs.connected = compressorDebouncer.calculate(!SparkUtil.stickyFault);
-    
+
     // what the PSI is
     inputs.pressurePSI = getPressure();
-    
+
     // update compressor values, only accepting if no sticky fault present
     ifOK(
         compressor,
@@ -112,7 +111,7 @@ public class PneumaticsIOHardware implements PneumaticsIO {
 
   /**
    * set the compressor to a desired percent
-   * 
+   *
    * @param percent the desired percent to set to
    */
   @Override
@@ -126,17 +125,13 @@ public class PneumaticsIOHardware implements PneumaticsIO {
     }
   }
 
-  /**
-   * create a seal with the barrel
-   */
+  /** create a seal with the barrel */
   @Override
   public void enablePressureSeal() {
     pressureSeal.set(Value.kForward);
   }
 
-  /**
-   * remove seal with the barrel
-   */
+  /** remove seal with the barrel */
   @Override
   public void disablePressureSeal() {
     pressureSeal.set(Value.kReverse);
@@ -144,7 +139,7 @@ public class PneumaticsIOHardware implements PneumaticsIO {
 
   /**
    * make the shooting seal go in a direction
-   * 
+   *
    * @param direction if the seal should go on(true) or off(false)
    */
   @Override

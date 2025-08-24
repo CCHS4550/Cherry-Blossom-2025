@@ -18,13 +18,13 @@ import frc.robot.Subsystems.Turret.Pneumatics.Pneumatics.wantedPneumaticsState;
 import frc.robot.Subsystems.Turret.Rotation.Rotation;
 import frc.robot.Subsystems.Turret.Rotation.Rotation.wantedRotationState;
 
-/**
- * creates a periodic state machine used for determining the behavior of the entire robot
- */
+/** creates a periodic state machine used for determining the behavior of the entire robot */
 public class Superstructure extends SubsystemBase {
-  
+
   // potential bad practice
-  public boolean isRunningCommand; // exists in order to prevent the periodic state machine from calling the same command
+  public boolean
+      isRunningCommand; // exists in order to prevent the periodic state machine from calling the
+  // same command
   // multiple times
 
   // the subsystems used in the super structure
@@ -64,7 +64,7 @@ public class Superstructure extends SubsystemBase {
 
   /**
    * Constructor for the super structure
-   * 
+   *
    * @param pneumatics instance of PneumaticsIO or classes implementing PneumaticsIO
    * @param barrels instance of BarrelIO or classes implementing BarrelIO
    * @param elevation instance of ElevationIO or classes implementing ElevationIO
@@ -78,40 +78,43 @@ public class Superstructure extends SubsystemBase {
     this.elevation = elevation;
     this.rotation = rotation;
     this.drive = drive;
-    
-    //sets the turrets field oriented rotation to be the same as the bots, if not, change the adjustment rotation 2d that get added on the bots
+
+    // sets the turrets field oriented rotation to be the same as the bots, if not, change the
+    // adjustment rotation 2d that get added on the bots
     sendDriveInfoToRotation();
     rotation.setrotationRadiansFieldOriented(Rotation2d.kZero);
   }
 
-  /** 
+  /**
    * runs periodically
-   * 
-   * thread safe is not needed because already dealt with in subsystems
-   * 
-   * again sending drive information this way is bad practice, should use a robotState class
+   *
+   * <p>thread safe is not needed because already dealt with in subsystems
+   *
+   * <p>again sending drive information this way is bad practice, should use a robotState class
    */
   @Override
   public void periodic() {
     // sending drive information this way is bad practice, should use a robotState class
     sendDriveInfoToRotation();
-    
+
     // stop if disabled
     if (DriverStation.isDisabled()) {
       setWantedState(wantedState.IDLE);
       SystemState = systemState.IDLE;
     }
-    
-    //set system state to match wanted state and deal with any changes that need to be made in between states
+
+    // set system state to match wanted state and deal with any changes that need to be made in
+    // between states
     SystemState = handleStateTransitions();
-    
+
     // turn the states into desired output
     applyStates();
   }
-  
+
   /**
-   * sets the system state to be the same as the wanted state, but can be set to perform more complex judgements on what state to goto if so desired
-   * 
+   * sets the system state to be the same as the wanted state, but can be set to perform more
+   * complex judgements on what state to goto if so desired
+   *
    * @return the systemstate that our systemState variable will be set to
    */
   public systemState handleStateTransitions() {
@@ -169,15 +172,16 @@ public class Superstructure extends SubsystemBase {
     }
   }
 
-/**
- * shoots and indexes all 6 barrels of the T-shirt cannon, then ends and sets the state back to idle
- * 
- * sets and resets the isRunningCommand boolean automatically
- * 
- * should end on a redundant index but that shouldnt do any harm
- * 
- * @return the command to shoot all 6 and then reset state and boolean
- */
+  /**
+   * shoots and indexes all 6 barrels of the T-shirt cannon, then ends and sets the state back to
+   * idle
+   *
+   * <p>sets and resets the isRunningCommand boolean automatically
+   *
+   * <p>should end on a redundant index but that shouldnt do any harm
+   *
+   * @return the command to shoot all 6 and then reset state and boolean
+   */
   public Command shootSix() {
     isRunningCommand = true; // set isRunningCommand true to not overwhelm the scheduler
     return new SequentialCommandGroup(
@@ -187,25 +191,34 @@ public class Superstructure extends SubsystemBase {
         shootThenIndex(),
         shootThenIndex(),
         shootThenIndex(),
-        new InstantCommand(() -> WantedState = wantedState.IDLE), // got back to idle so this state can be called again
+        new InstantCommand(
+            () ->
+                WantedState =
+                    wantedState.IDLE), // got back to idle so this state can be called again
         new InstantCommand(() -> isRunningCommand = false)); // reset the boolean
   }
 
   /**
- * shoots then indexes 1 barrel of the T-shirt cannon, then ends and sets the state back to idle if we just want to shoot 1
- * 
- * sets and resets the isRunningCommand boolean automatically if we just want to shoot 1
- * 
- * @return the command to shoot then index and to reset or not
- */
+   * shoots then indexes 1 barrel of the T-shirt cannon, then ends and sets the state back to idle
+   * if we just want to shoot 1
+   *
+   * <p>sets and resets the isRunningCommand boolean automatically if we just want to shoot 1
+   *
+   * @return the command to shoot then index and to reset or not
+   */
   public Command shootThenIndex() {
     isRunningCommand = true; // set isRunningCommand true to not overwhelm the scheduler
     return new SequentialCommandGroup(
-        new InstantCommand(() -> pneumatics.setWantedState(wantedPneumaticsState.SHOOT)), // shoot using the pneumatics state
-        new WaitUntilCommand(() -> !pneumatics.isRunningCommand), // wait until that sequence has finishied
-        new InstantCommand(() -> barrels.setWantedState(wantedBarrelState.INDEX)), // index the barrel
+        new InstantCommand(
+            () ->
+                pneumatics.setWantedState(
+                    wantedPneumaticsState.SHOOT)), // shoot using the pneumatics state
+        new WaitUntilCommand(
+            () -> !pneumatics.isRunningCommand), // wait until that sequence has finishied
+        new InstantCommand(
+            () -> barrels.setWantedState(wantedBarrelState.INDEX)), // index the barrel
         new WaitUntilCommand(() -> barrels.isAtAngle), // wait until we are at angle, then move on
-        
+
         // reset state if not in the SHOOT_ALL state, otherwise, return a null command
         new ConditionalCommand(
             new InstantCommand(() -> WantedState = wantedState.IDLE),
@@ -228,9 +241,9 @@ public class Superstructure extends SubsystemBase {
   }
 
   /**
-   * sets the bots's wanted state 
-   * should be the primary way of manipulating the superstructure outside of the class
-   * 
+   * sets the bots's wanted state should be the primary way of manipulating the superstructure
+   * outside of the class
+   *
    * @param wantedState the desired state
    */
   public void setWantedState(wantedState WantedState) {
