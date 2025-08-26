@@ -18,7 +18,7 @@ import frc.robot.Subsystems.Turret.Rotation.Rotation;
 import frc.robot.Subsystems.Turret.Rotation.Rotation.wantedRotationState;
 
 public class Superstructure extends SubsystemBase {
-  public boolean isRunningCommand;
+  private boolean isRunningCommand;
 
   Pneumatics pneumatics;
   Barrel barrels;

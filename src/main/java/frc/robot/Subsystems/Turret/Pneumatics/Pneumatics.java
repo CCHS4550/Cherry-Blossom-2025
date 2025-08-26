@@ -15,10 +15,10 @@ public class Pneumatics extends SubsystemBase {
 
   private final PneumaticsIOInputsAutoLogged inputs = new PneumaticsIOInputsAutoLogged();
 
-  public double compressorPercent;
-  public double desiredPSI = 100.0;
+  private double compressorPercent;
+  private double desiredPSI = 100.0;
 
-  public boolean isRunningCommand = false;
+  private boolean isRunningCommand = false;
 
   public enum wantedPneumaticsState {
     TESTING,
