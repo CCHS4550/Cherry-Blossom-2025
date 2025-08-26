@@ -135,7 +135,7 @@ public class Rotation extends SubsystemBase {
    */
   public systemState handleStateTransitions() {
     if (WantedState != wantedRotationState.ROBOT_ORIENTED_ANGLE
-        || WantedState != wantedRotationState.BOT_ADJUSTED_ROBOT_ORIENTED_ANGLE) {
+        && WantedState != wantedRotationState.BOT_ADJUSTED_ROBOT_ORIENTED_ANGLE) {
       state =
           new State(
               inputs.rotationPositionRad,

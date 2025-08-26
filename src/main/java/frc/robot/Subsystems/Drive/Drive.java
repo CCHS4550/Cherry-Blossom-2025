@@ -923,7 +923,7 @@ public class Drive extends SubsystemBase {
 
   /**
    * In this test, the mechanism is gradually sped-up such that the voltage corresponding to
-   * acceleration is negligible (hence, “as if static”)
+   * acceleration is negligible (hence, "as if static")
    *
    * @param direction whether to test this forward or reverse
    * @return a command to perform the desired sysID test
@@ -1040,8 +1040,6 @@ public class Drive extends SubsystemBase {
   public void setPose(Pose2d pose) {
     poseEstimator.resetPosition(rawGyroRotation, getModulePositions(), pose);
   }
-  // leave this blank for now because I dont want to deal with vision rn
-  public void addVisionMeasurement() {}
 
   /**
    * @return the max XY speed the bot can travel at in meters per sec
