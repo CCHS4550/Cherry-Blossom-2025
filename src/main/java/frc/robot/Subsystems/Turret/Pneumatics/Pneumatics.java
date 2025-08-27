@@ -23,8 +23,10 @@ public class Pneumatics extends SubsystemBase {
   private final PneumaticsIOInputsAutoLogged inputs =
       new PneumaticsIOInputsAutoLogged(); // logged inputs of the pneumatics system
 
-  public double compressorPercent; // the percent that the compressor uses
-  public double desiredPSI = 100.0; // the PSI we want to be at
+
+  private double compressorPercent; // the percent that the compressor uses
+  private double desiredPSI = 100.0; // the PSI we want to be at
+
 
   // potential bad practice
   public boolean isRunningCommand =

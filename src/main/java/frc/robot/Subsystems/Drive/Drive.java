@@ -88,16 +88,17 @@ public class Drive extends SubsystemBase {
   private double idealEndVeloOntheFly;
 
   // values to use during teleop, these will be periodically set during the default command
-  public double xJoystickInput = 0.0;
-  public double yJoystickInput = 0.0;
-  public double omegaJoystickInput = 0.0;
+  private double xJoystickInput = 0.0;
+  private double yJoystickInput = 0.0;
+  private double omegaJoystickInput = 0.0;
 
   // angle for teleop drive but the bot is at a fixed angle
-  public Rotation2d joystickDriveAtAngleAngle = Rotation2d.fromRadians(0.0);
+  private Rotation2d joystickDriveAtAngleAngle = Rotation2d.fromRadians(0.0);
 
   // constraints for drive to point functionality
-  public double maxOptionalTurnVeloRadiansPerSec = Double.NaN;
-  public double maxVelocityOutputForDriveToPoint = Units.feetToMeters(10.0);
+  private double maxOptionalTurnVeloRadiansPerSec = Double.NaN;
+  private double maxVelocityOutputForDriveToPoint = Units.feetToMeters(10.0);
+
 
   // pid controllers for drive to point, not fully tested so unsure if seperation of auto and teleop
   // is needed, but lower auto values also mean slower more accurate pid
@@ -106,16 +107,17 @@ public class Drive extends SubsystemBase {
   private Pose2d driveToPointPose = new Pose2d(); // pose to drive to
 
   // acceptable margin of error when going to a posse
-  public static final double goToPoseTranslationError = Units.inchesToMeters(0.5);
+  private static final double goToPoseTranslationError = Units.inchesToMeters(0.5);
 
   // potential bad practice
   // mainly used in path on the fly, nothing else uses command scheduler
   private boolean isRunningCommand =
       false; // exists in order to prevent the periodic state machine from calling the same command
   // multiple times
-  public BooleanSupplier shouldCancelEarly =
+  private BooleanSupplier shouldCancelEarly =
       () ->
           false; // we can enable should cancel early anytime we want to stop a command from running
+
 
   // state we want drive train to be in
   public enum WantedState {

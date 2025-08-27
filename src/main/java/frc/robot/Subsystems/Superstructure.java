@@ -20,9 +20,8 @@ import frc.robot.Subsystems.Turret.Rotation.Rotation.wantedRotationState;
 
 /** creates a periodic state machine used for determining the behavior of the entire robot */
 public class Superstructure extends SubsystemBase {
-
   // potential bad practice
-  public boolean
+  private boolean
       isRunningCommand; // exists in order to prevent the periodic state machine from calling the
   // same command
   // multiple times
