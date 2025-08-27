@@ -18,7 +18,7 @@ public class Pneumatics extends SubsystemBase {
   private double compressorPercent;
   private double desiredPSI = 100.0;
 
-  private boolean isRunningCommand = false;
+  public boolean isRunningCommand = false;
 
   public enum wantedPneumaticsState {
     TESTING,
