@@ -12,6 +12,7 @@ import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.Robotstate;
 
 /** creates a rotation than go spin freely or go to a robot oriented or field oriented angle */
 public class Rotation extends SubsystemBase {
@@ -35,13 +36,6 @@ public class Rotation extends SubsystemBase {
   // robot
   public Rotation2d wantedRotationRadiansFieldOriented; // angle of the barrel relative to the field
   public Pose2d targetLockPose; // the pose2d to aim at
-
-  // Potential Bad Practice:
-  // robot values, these may not be thread safe and also may lag behind real odometry values
-  // implement a robotState class for better practice
-  public Pose2d robotPose;
-  public Rotation2d robotOrientation;
-  public double robotYawVelo;
 
   // feed forward control
   private SimpleMotorFeedforward veloFF =
@@ -90,6 +84,8 @@ public class Rotation extends SubsystemBase {
     this.io = io;
 
     rotationDCAlert = new Alert("rotation motor is disconnected", AlertType.kError);
+
+    setrotationRadiansFieldOriented(new Rotation2d());
   }
 
   /**
@@ -187,7 +183,9 @@ public class Rotation extends SubsystemBase {
   /** updates the turrets field orientated angle */
   public void updateFieldOrientedAngle() {
     double unwrappedRadians =
-        (robotOrientation.plus(Rotation2d.fromRadians(inputs.rotationPositionRad)))
+        (Robotstate.getInstance()
+                .getRotation()
+                .plus(Rotation2d.fromRadians(inputs.rotationPositionRad)))
             .getRadians(); // findsd the angle by combining the robot relative rotation with the
     // bots rotation
     rotationRadiansFieldOriented =
@@ -196,13 +194,18 @@ public class Rotation extends SubsystemBase {
 
   /** redundant we can kill this */
   public void runRobotAdjustedAngle() {
-    Rotation2d adjustedAngle = wantedRotationRadiansBotOriented.minus(robotOrientation);
+    Rotation2d adjustedAngle =
+        wantedRotationRadiansBotOriented.minus(Robotstate.getInstance().getRotation());
     adjustedAngle = optimizeAngle(adjustedAngle);
     goal =
-        new State(wantedRotationRadiansBotOriented.getRadians() - robotOrientation.getRadians(), 0);
+        new State(
+            wantedRotationRadiansBotOriented.getRadians()
+                - Robotstate.getInstance().getRotation().getRadians(),
+            0);
     goal = new State(optimizeAngle(Rotation2d.fromRadians(goal.position)).getRadians(), 0);
     state = profile.calculate(0.02, state, goal);
-    double arbFF = veloFF.calculate(state.velocity - robotYawVelo);
+    double arbFF =
+        veloFF.calculate(state.velocity - Robotstate.getInstance().getGyroVeloRadPerSec());
     io.setRotationPos(adjustedAngle, arbFF);
   }
 
@@ -243,7 +246,7 @@ public class Rotation extends SubsystemBase {
     // calculate the voltage necesary to meet the checkpoint's velocity
     double arbFF = 0.0;
     if (veloCompensation) {
-      arbFF = veloFF.calculate(state.velocity - this.robotYawVelo);
+      arbFF = veloFF.calculate(state.velocity - Robotstate.getInstance().getGyroVeloRadPerSec());
     } else {
       arbFF = veloFF.calculate(state.velocity);
     }
@@ -261,7 +264,9 @@ public class Rotation extends SubsystemBase {
     // convert angle
     wantedRotationRadiansBotOriented =
         Rotation2d.fromRadians(
-            wrapRadians((wantedRotationRadiansFieldOriented.minus(robotOrientation)).getRadians()));
+            wrapRadians(
+                (wantedRotationRadiansFieldOriented.minus(Robotstate.getInstance().getRotation()))
+                    .getRadians()));
     // goal = new State(optimizeAngle(wantedRotationRadiansBotOriented).getRadians(), 0.0);
     // shouldn't be necesary
 
@@ -276,7 +281,8 @@ public class Rotation extends SubsystemBase {
   public void runTargetLock() {
     double targetFieldAngle =
         Math.atan2(
-            targetLockPose.getY() - robotPose.getY(), targetLockPose.getX() - robotPose.getX());
+            targetLockPose.getY() - Robotstate.getInstance().getPose().getY(),
+            targetLockPose.getX() - Robotstate.getInstance().getPose().getX());
     wantedRotationRadiansFieldOriented = Rotation2d.fromRadians(targetFieldAngle);
     runFieldOrientatedAngle();
   }
@@ -325,21 +331,6 @@ public class Rotation extends SubsystemBase {
     return (radians % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
   }
 
-  /** sets robot information again, potential bad practice */
-  public void setRobotAngle(Rotation2d rotation) {
-    robotOrientation = rotation;
-  }
-
-  /** sets robot information again, potential bad practice */
-  public void setRobotVelo(double velo) {
-    robotYawVelo = velo;
-  }
-
-  /** sets robot information again, potential bad practice */
-  public void setRobotPose(Pose2d pose) {
-    robotPose = pose;
-  }
-
   public void setGoal(
       double
           radians) { // if we knew specifically what goal to go to we could set this in the class,
@@ -361,6 +352,6 @@ public class Rotation extends SubsystemBase {
    * + any pre determined starting turn
    */
   public void setrotationRadiansFieldOriented(Rotation2d adjustment) {
-    rotationRadiansFieldOriented = robotOrientation.plus(adjustment);
+    rotationRadiansFieldOriented = Robotstate.getInstance().getRotation().plus(adjustment);
   }
 }

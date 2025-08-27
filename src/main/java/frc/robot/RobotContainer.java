@@ -1,6 +1,9 @@
 package frc.robot;
 
+import static frc.robot.Constants.VisionConstants.*;
+
 import com.pathplanner.lib.auto.AutoBuilder;
+
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.ControlSchemes.DriveScheme;
@@ -23,12 +26,16 @@ import frc.robot.Subsystems.Turret.Pneumatics.PneumaticsIOHardware;
 import frc.robot.Subsystems.Turret.Rotation.Rotation;
 import frc.robot.Subsystems.Turret.Rotation.RotationIO;
 import frc.robot.Subsystems.Turret.Rotation.RotationIOSpark;
+import frc.robot.Subsystems.Vision.Vision;
+import frc.robot.Subsystems.Vision.VisionIO;
+import frc.robot.Subsystems.Vision.VisionIOPhotonvision;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
 public class RobotContainer {
 
   // subclasses of the robot
   private final Drive drive;
+  private final Vision vision;
   private final Barrel barrels;
   private final Elevation elevation;
   private final Pneumatics pneumatics;
@@ -59,6 +66,9 @@ public class RobotContainer {
         pneumatics = new Pneumatics(new PneumaticsIOHardware());
         rotation = new Rotation(new RotationIOSpark());
 
+        vision = new Vision(drive, new VisionIOPhotonvision("Camera 1", cameraOneToRobot), new VisionIOPhotonvision("Camera 2", cameraTwoToRobot));
+
+
         // create the super structure
         superstructure = new Superstructure(pneumatics, barrels, elevation, rotation, drive);
 
@@ -81,6 +91,8 @@ public class RobotContainer {
         pneumatics = new Pneumatics(new PneumaticsIO() {});
         rotation = new Rotation(new RotationIO() {});
 
+        vision = new Vision(drive, new VisionIO(){});
+
         superstructure = new Superstructure(pneumatics, barrels, elevation, rotation, drive);
 
         DriveScheme.configure(drive, primaryController);
@@ -100,6 +112,8 @@ public class RobotContainer {
         elevation = new Elevation(new ElevationIO() {});
         pneumatics = new Pneumatics(new PneumaticsIO() {});
         rotation = new Rotation(new RotationIO() {});
+
+        vision = new Vision(drive, new VisionIO(){});
 
         superstructure = new Superstructure(pneumatics, barrels, elevation, rotation, drive);
         break;

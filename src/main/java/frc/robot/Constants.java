@@ -15,7 +15,11 @@ package frc.robot;
 
 import com.pathplanner.lib.config.ModuleConfig;
 import com.pathplanner.lib.config.RobotConfig;
+import edu.wpi.first.apriltag.AprilTagFieldLayout;
+import edu.wpi.first.apriltag.AprilTagFields;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Rotation3d;
+import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.math.util.Units;
@@ -39,6 +43,32 @@ public final class Constants {
 
     /** Replaying from a log file. */
     REPLAY
+  }
+
+  public static final class VisionConstants {
+    public static AprilTagFieldLayout aprilTagLayout =
+        AprilTagFieldLayout.loadField(AprilTagFields.kDefaultField);
+
+    public static double maxAmbiguity = 0.3; // placeholder
+    public static double maxZError = 0.75; // placeholder
+
+    public static int frontCameraCanID;
+
+    public static double linearStdDevBaseline = 0.02;
+    public static double angularStdDevBaseline = 0.06;
+    public static double linearStdDevMegatag2Factor = 0.5;
+    public static double angularStdDevMegatag2Factor = Double.POSITIVE_INFINITY;
+
+    // Standard deviation multipliers for each camera
+    // (Adjust to trust some cameras more than others)
+    public static double[] cameraStdDevFactors =
+        new double[] {
+          1.0, // Camera 0
+          1.0 // Camera 1
+        };
+    
+    public static Transform3d cameraOneToRobot = new Transform3d(0.0, 0.0, 0.0, new Rotation3d()); // fill with actual camera offsets
+    public static Transform3d cameraTwoToRobot = new Transform3d(0.0, 0.0, 0.0, new Rotation3d()); // fill with actual camera offsets
   }
 
   public final class DriveConstants {

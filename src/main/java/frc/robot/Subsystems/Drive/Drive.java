@@ -12,6 +12,7 @@ import edu.wpi.first.hal.FRCNetComm.tInstances;
 import edu.wpi.first.hal.FRCNetComm.tResourceType;
 import edu.wpi.first.hal.HAL;
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
@@ -24,6 +25,8 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
+import edu.wpi.first.math.numbers.N1;
+import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.Alert;
@@ -36,10 +39,12 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.Constants;
 import frc.robot.Constants.Mode;
+import frc.robot.Robotstate;
 import frc.robot.Subsystems.Drive.Gyro.GyroIO;
 import frc.robot.Subsystems.Drive.Gyro.GyroIOInputsAutoLogged;
 import frc.robot.Subsystems.Drive.Module.*;
 import frc.robot.Subsystems.Drive.Module.Module;
+import frc.robot.Subsystems.Vision.Vision;
 import frc.robot.Util.LocalADStarAK;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -52,7 +57,7 @@ import org.littletonrobotics.junction.Logger;
  * according to input uses a state machine function, so most operations should be able to be called
  * by simply changing the wanted state
  */
-public class Drive extends SubsystemBase {
+public class Drive extends SubsystemBase implements Vision.VisionConsumer {
 
   // java lock to implement thread safe
   static final Lock odometryLock = new ReentrantLock();
@@ -311,6 +316,9 @@ public class Drive extends SubsystemBase {
           modulePositions); // use poseEstimators inbuild function to update with our newest
       // odometry information, coordinated with timestamps
     }
+
+    Robotstate.getInstance().updateBotPoseAndSpeeds(getPose(), getChassisSpeeds());
+    Robotstate.getInstance().updateRawGyroVelo(gyroInputs.yawVelocityRadPerSec);
 
     systemState = handleStateTransition(); // adjust system state according to the wanted state
 
@@ -1039,6 +1047,8 @@ public class Drive extends SubsystemBase {
    */
   public void setPose(Pose2d pose) {
     poseEstimator.resetPosition(rawGyroRotation, getModulePositions(), pose);
+    Pose2d robotPose = new Pose2d(pose.getTranslation(), rawGyroRotation);
+    Robotstate.getInstance().setPose(robotPose);
   }
 
   /**
@@ -1192,5 +1202,15 @@ public class Drive extends SubsystemBase {
    */
   public void setEarlyCancel(boolean should) {
     shouldCancelEarly = () -> should;
+  }
+
+  /** Adds a new timestamped vision measurement. */
+  @Override
+  public void accept(
+      Pose2d visionRobotPoseMeters,
+      double timestampSeconds,
+      Matrix<N3, N1> visionMeasurementStdDevs) {
+    poseEstimator.addVisionMeasurement(
+        visionRobotPoseMeters, timestampSeconds, visionMeasurementStdDevs);
   }
 }
