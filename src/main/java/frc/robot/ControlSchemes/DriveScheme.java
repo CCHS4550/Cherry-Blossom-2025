@@ -1,5 +1,6 @@
 package frc.robot.ControlSchemes;
 
+import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.ParallelCommandGroup;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
@@ -14,7 +15,7 @@ public class DriveScheme {
   public static void configure(Drive drive, CommandXboxController controller) {
     // default command will periodically run in drive train, in this case it periodically updates
     // our joystick values
-    drive.setDefaultCommand(
+    Command driveDefaultCommand =
         new ParallelCommandGroup(
             Commands.run(
                 () ->
@@ -27,7 +28,9 @@ public class DriveScheme {
             Commands.run(
                 () ->
                     drive.setOmegaJoystickInput(
-                        controller.getRightX() * driveSpeedModifier.getAsDouble()))));
+                        controller.getRightX() * driveSpeedModifier.getAsDouble())));
+    driveDefaultCommand.addRequirements(drive);
+    drive.setDefaultCommand(driveDefaultCommand);
 
     // set button bindings
     configureButtons(controller, drive);
