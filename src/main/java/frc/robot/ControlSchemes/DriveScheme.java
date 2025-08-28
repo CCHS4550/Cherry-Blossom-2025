@@ -4,7 +4,6 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.ParallelCommandGroup;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.Subsystems.Drive.Drive;
-import frc.robot.Subsystems.Drive.Drive.WantedState;
 import java.util.function.DoubleSupplier;
 
 /** how a controller interacts with the drive train */
@@ -42,18 +41,20 @@ public class DriveScheme {
     controller.rightBumper().onFalse(Commands.runOnce(() -> setSlowMode()));
 
     // drive to point while button is held
-    controller.a().whileTrue(Commands.run(() -> drive.setWantedState(WantedState.DRIVE_TO_POINT)));
-    controller.a().onFalse(Commands.run(() -> drive.setWantedState(WantedState.TELEOP_DRIVE)));
+    // controller.a().whileTrue(Commands.run(() ->
+    // drive.setWantedState(WantedState.DRIVE_TO_POINT)));
+    // controller.a().onFalse(Commands.run(() -> drive.setWantedState(WantedState.TELEOP_DRIVE)));
 
-    // path on the fly while button is held
-    controller.b().whileTrue(Commands.run(() -> drive.setWantedState(WantedState.PATH_ON_THE_FLY)));
-    controller.b().onFalse(Commands.run(() -> drive.setWantedState(WantedState.TELEOP_DRIVE)));
+    // // path on the fly while button is held
+    // controller.b().whileTrue(Commands.run(() ->
+    // drive.setWantedState(WantedState.PATH_ON_THE_FLY)));
+    // controller.b().onFalse(Commands.run(() -> drive.setWantedState(WantedState.TELEOP_DRIVE)));
 
-    // drive at angle while button is held
-    controller
-        .x()
-        .whileTrue(Commands.run(() -> drive.setWantedState(WantedState.TELEOP_DRIVE_AT_ANGLE)));
-    controller.x().onFalse(Commands.run(() -> drive.setWantedState(WantedState.TELEOP_DRIVE)));
+    // // drive at angle while button is held
+    // controller
+    //     .x()
+    //     .whileTrue(Commands.run(() -> drive.setWantedState(WantedState.TELEOP_DRIVE_AT_ANGLE)));
+    // controller.x().onFalse(Commands.run(() -> drive.setWantedState(WantedState.TELEOP_DRIVE)));
   }
 
   // setters for fast and slow mode
