@@ -66,9 +66,11 @@ public final class Constants {
           1.0, // Camera 0
           1.0 // Camera 1
         };
-    
-    public static Transform3d cameraOneToRobot = new Transform3d(0.0, 0.0, 0.0, new Rotation3d()); // fill with actual camera offsets
-    public static Transform3d cameraTwoToRobot = new Transform3d(0.0, 0.0, 0.0, new Rotation3d()); // fill with actual camera offsets
+
+    public static Transform3d cameraOneToRobot =
+        new Transform3d(0.0, 0.0, 0.0, new Rotation3d()); // fill with actual camera offsets
+    public static Transform3d cameraTwoToRobot =
+        new Transform3d(0.0, 0.0, 0.0, new Rotation3d()); // fill with actual camera offsets
   }
 
   public final class DriveConstants {
