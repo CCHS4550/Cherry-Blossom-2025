@@ -1,6 +1,5 @@
 package frc.robot.Subsystems;
 
-import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.ConditionalCommand;
@@ -80,8 +79,6 @@ public class Superstructure extends SubsystemBase {
 
     // sets the turrets field oriented rotation to be the same as the bots, if not, change the
     // adjustment rotation 2d that get added on the bots
-    sendDriveInfoToRotation();
-    rotation.setrotationRadiansFieldOriented(Rotation2d.kZero);
   }
 
   /**
@@ -93,8 +90,6 @@ public class Superstructure extends SubsystemBase {
    */
   @Override
   public void periodic() {
-    // sending drive information this way is bad practice, should use a robotState class
-    sendDriveInfoToRotation();
 
     // stop if disabled
     if (DriverStation.isDisabled()) {
@@ -229,14 +224,6 @@ public class Superstructure extends SubsystemBase {
             new InstantCommand(() -> isRunningCommand = false),
             new InstantCommand(),
             () -> WantedState != wantedState.SHOOT_ALL));
-  }
-
-  // sends odometry information to the rotation to use for field orientated
-  // again, potential bad practice
-  public void sendDriveInfoToRotation() {
-    rotation.setRobotPose(drive.getPose());
-    rotation.setRobotAngle(drive.getRotation());
-    rotation.setRobotVelo(drive.getYawVelocity());
   }
 
   /**
