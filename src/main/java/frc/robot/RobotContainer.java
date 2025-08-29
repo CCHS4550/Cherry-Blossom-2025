@@ -9,7 +9,7 @@ import frc.robot.ControlSchemes.DriveScheme;
 import frc.robot.ControlSchemes.MechanismScheme;
 import frc.robot.Subsystems.Drive.Drive;
 import frc.robot.Subsystems.Drive.Gyro.GyroIO;
-import frc.robot.Subsystems.Drive.Gyro.GyroPigeon;
+import frc.robot.Subsystems.Drive.Gyro.GyroIONavX;
 import frc.robot.Subsystems.Drive.Module.ModuleIO;
 import frc.robot.Subsystems.Drive.Module.ModuleIOSpark;
 import frc.robot.Subsystems.Superstructure;
@@ -55,7 +55,7 @@ public class RobotContainer {
         // Real robot, instantiate hardware IO implementations
         drive =
             new Drive(
-                new GyroPigeon(),
+                new GyroIONavX(),
                 new ModuleIOSpark(0),
                 new ModuleIOSpark(1),
                 new ModuleIOSpark(2),
