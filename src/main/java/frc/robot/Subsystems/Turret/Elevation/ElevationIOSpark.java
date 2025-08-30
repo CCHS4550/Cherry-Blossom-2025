@@ -263,7 +263,8 @@ public class ElevationIOSpark implements ElevationIO {
     inputs.elevationTwoConnected = elevationDebouncerTwo.calculate(!SparkUtil.stickyFault);
 
     // update the limitswitch's status
-    inputs.limitSwitchHit = limitSwitch.get();
+    // inputs.limitSwitchHit = limitSwitch.get(); // might be the opposite
+    inputs.limitSwitchHit = false;
   }
 
   /**

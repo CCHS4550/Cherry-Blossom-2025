@@ -64,8 +64,8 @@ public class Elevation extends SubsystemBase {
   }
 
   // initialize our states
-  wantedElevationState WantedState = wantedElevationState.MANUAL;
-  systemState SystemState = systemState.MANUAL;
+  wantedElevationState WantedState = wantedElevationState.IDLE;
+  systemState SystemState = systemState.IDLE;
 
   /**
    * constructor for the elevation
@@ -100,7 +100,7 @@ public class Elevation extends SubsystemBase {
 
       // set system state to match wanted state and deal with any changes that need to be made in
       // between states
-      handlStateTransitions();
+      SystemState = handlStateTransitions();
 
       // turn the states into desired output
       applyStates();

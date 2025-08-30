@@ -146,14 +146,14 @@ public class Superstructure extends SubsystemBase {
         pneumatics.setWantedState(wantedPneumaticsState.FILLING_AIR_TANK);
       case SHOOT_ONE:
         if (!isRunningCommand) {
-          shootThenIndex();
+          shootThenIndex().schedule();
         } else {
           WantedState = wantedState.IDLE;
         }
         break;
       case SHOOT_ALL:
         if (!isRunningCommand) {
-          shootSix();
+          shootSix().schedule();
         } else {
           WantedState = wantedState.IDLE;
         }

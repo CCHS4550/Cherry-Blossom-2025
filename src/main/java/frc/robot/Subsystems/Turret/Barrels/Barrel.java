@@ -183,7 +183,7 @@ public class Barrel extends SubsystemBase {
     Rotation2d angle = barrelAngle.plus(Rotation2d.fromRadians(Math.PI / 3));
 
     // wrap the angle if needed
-    if (angle.getRadians() >= 360 || angle.getRadians() <= 0) {
+    if (angle.getRadians() >= Math.PI * 2 || angle.getRadians() <= 0) {
       angle = Rotation2d.kZero;
     }
 
@@ -213,7 +213,7 @@ public class Barrel extends SubsystemBase {
    */
   public boolean isAtAngle() {
     if (MathUtil.isNear(
-        inputs.barrelPositionRad, barrelAngle.getRadians(), Units.degreesToRadians(0.05))) {
+        inputs.barrelPositionRad, barrelAngle.getRadians(), Units.degreesToRadians(1))) {
       isAtAngle = true;
       setWantedState(wantedBarrelState.IDLE);
     }

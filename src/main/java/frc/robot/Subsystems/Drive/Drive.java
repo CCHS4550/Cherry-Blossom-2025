@@ -104,7 +104,6 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
   private double maxOptionalTurnVeloRadiansPerSec = Double.NaN;
   private double maxVelocityOutputForDriveToPoint = Units.feetToMeters(10.0);
 
-
   // pid controllers for drive to point, not fully tested so unsure if seperation of auto and teleop
   // is needed, but lower auto values also mean slower more accurate pid
   private final PIDController autoDriveToPointController = new PIDController(3.0, 0, 0.1);
@@ -122,7 +121,6 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
   private BooleanSupplier shouldCancelEarly =
       () ->
           false; // we can enable should cancel early anytime we want to stop a command from running
-
 
   // state we want drive train to be in
   public enum WantedState {
@@ -199,8 +197,8 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
     this.gyroIO = gyroIO;
     modules[0] = new Module(flModuleIO, 0);
     modules[1] = new Module(frModuleIO, 1);
-    modules[2] = new Module(flModuleIO, 2);
-    modules[3] = new Module(frModuleIO, 3);
+    modules[2] = new Module(blModuleIO, 2);
+    modules[3] = new Module(brModuleIO, 3);
 
     // Usage reporting
     HAL.report(tResourceType.kResourceType_RobotDrive, tInstances.kRobotDriveSwerve_AdvantageKit);

@@ -23,10 +23,8 @@ public class Pneumatics extends SubsystemBase {
   private final PneumaticsIOInputsAutoLogged inputs =
       new PneumaticsIOInputsAutoLogged(); // logged inputs of the pneumatics system
 
-
   private double compressorPercent; // the percent that the compressor uses
   private double desiredPSI = 100.0; // the PSI we want to be at
-
 
   // potential bad practice
   public boolean isRunningCommand =
@@ -130,7 +128,7 @@ public class Pneumatics extends SubsystemBase {
   private void applyStates() {
     switch (systemState) {
       case TESTING:
-        doTestingTask();
+        doTestingTask().schedule();
         break;
       case FILLING_AIR_TANK:
         if (inputs.pressurePSI <= desiredPSI
@@ -142,7 +140,7 @@ public class Pneumatics extends SubsystemBase {
         break;
       case SHOOT:
         if (!isRunningCommand) {
-          runShootingSequence(); // only shoot sequence when the previous one is done
+          runShootingSequence().schedule(); // only shoot sequence when the previous one is done
         }
         break;
       case IDLE:
@@ -157,8 +155,8 @@ public class Pneumatics extends SubsystemBase {
    */
   private Command doTestingTask() {
     return switch (testingTask) {
-      case PRESSURE_SOLENOID_OFF -> new InstantCommand(() -> io.enablePressureSeal());
-      case PRESSURE_SOLENOID_ON -> new InstantCommand(() -> io.disablePressureSeal());
+      case PRESSURE_SOLENOID_ON -> new InstantCommand(() -> io.enablePressureSeal());
+      case PRESSURE_SOLENOID_OFF -> new InstantCommand(() -> io.disablePressureSeal());
       case SHOOTING_TRIGGER -> new StartEndCommand(
               () -> io.setShootingSeal(true), () -> io.setShootingSeal(false))
           .withTimeout(0.2);
