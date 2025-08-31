@@ -49,6 +49,7 @@ import frc.robot.Util.LocalADStarAK;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 
@@ -121,8 +122,11 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
   private BooleanSupplier shouldCancelEarly =
       () ->
           false; // we can enable should cancel early anytime we want to stop a command from running
-
   // state we want drive train to be in
+
+  // used for drive simulation
+  private final Consumer<Pose2d> resetSimulationPoseCallBack;
+
   public enum WantedState {
     SYS_ID,
     AUTO,
@@ -191,14 +195,22 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
       ModuleIO flModuleIO,
       ModuleIO frModuleIO,
       ModuleIO blModuleIO,
-      ModuleIO brModuleIO) {
+      ModuleIO brModuleIO,
+      Consumer<Pose2d> resetSimulationPoseCallBack) {
 
-    // initialize the gyro and modules
+    // initialize the gyro and modules and sim
     this.gyroIO = gyroIO;
+    this.resetSimulationPoseCallBack = resetSimulationPoseCallBack;
     modules[0] = new Module(flModuleIO, 0);
     modules[1] = new Module(frModuleIO, 1);
     modules[2] = new Module(blModuleIO, 2);
     modules[3] = new Module(brModuleIO, 3);
+
+    // initiate robot state with null values
+    // TODO: maybe do this better
+    Robotstate.getInstance()
+        .updateBotPoseAndSpeeds(new Pose2d(3, 3, new Rotation2d()), new ChassisSpeeds());
+    Robotstate.getInstance().updateRawGyroVelo(0.0);
 
     // Usage reporting
     HAL.report(tResourceType.kResourceType_RobotDrive, tInstances.kRobotDriveSwerve_AdvantageKit);
@@ -265,8 +277,6 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
         module.stop();
       }
       halt();
-      setWantedState(WantedState.IDLE);
-      systemState = SystemState.IDLE;
       Logger.recordOutput("SwerveStates/Setpoints", new SwerveModuleState[] {});
       Logger.recordOutput("SwerveStates/SetpointsOptimized", new SwerveModuleState[] {});
     }
@@ -317,9 +327,6 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
       // odometry information, coordinated with timestamps
     }
 
-    Robotstate.getInstance().updateBotPoseAndSpeeds(getPose(), getChassisSpeeds());
-    Robotstate.getInstance().updateRawGyroVelo(gyroInputs.yawVelocityRadPerSec);
-
     systemState = handleStateTransition(); // adjust system state according to the wanted state
 
     // log states
@@ -344,6 +351,9 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
 
     // turn the states into desired output
     applyStates();
+
+    Robotstate.getInstance().updateBotPoseAndSpeeds(getPose(), getChassisSpeeds());
+    Robotstate.getInstance().updateRawGyroVelo(gyroInputs.yawVelocityRadPerSec);
   }
 
   /**
@@ -393,6 +403,10 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
         // commands to follow that don't require a periodic state system
         break;
       case TELEOP_DRIVE:
+        Logger.recordOutput("Subsystems/Drive/ joystick x", xJoystickInput);
+        Logger.recordOutput("Subsystems/Drive/ joystick y", yJoystickInput);
+        Logger.recordOutput("Subsystems/Drive/ joystick omega", omegaJoystickInput);
+
         joystickDrive(xJoystickInput, yJoystickInput, omegaJoystickInput);
         // calculates speeds
         // runs velocity
@@ -411,7 +425,9 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
           isRunningCommand = true;
           AutoBuilder.pathfindToPose(
                   pathOntheFlyPose, pathConstraintsOnTheFly, idealEndVeloOntheFly)
-              .until(shouldCancelEarly);
+              .until(shouldCancelEarly)
+              .finallyDo(() -> isRunningCommand = false) // make sure we clear the flag
+              .schedule();
         }
         break;
       case DRIVE_TO_POINT:

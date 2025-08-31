@@ -1,11 +1,15 @@
 package frc.robot.Util;
 
+import static edu.wpi.first.units.Units.Seconds;
+
 import com.revrobotics.REVLibError;
 import com.revrobotics.spark.SparkBase;
+import edu.wpi.first.wpilibj.Timer;
 import java.util.function.Consumer;
 import java.util.function.DoubleConsumer;
 import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;
+import org.ironmaple.simulation.SimulatedArena;
 
 public class SparkUtil {
   // allows us to see if the sparkmax has had an error in the past
@@ -67,5 +71,16 @@ public class SparkUtil {
         stickyFault = true;
       }
     }
+  }
+
+  // returns an array of timestamps for simulation to use
+  public static double[] getSimulationOdometryTimeStamps() {
+    final double[] odometryTimeStamps = new double[SimulatedArena.getSimulationSubTicksIn1Period()];
+    for (int i = 0; i < odometryTimeStamps.length; i++) {
+      odometryTimeStamps[i] =
+          Timer.getFPGATimestamp() - 0.02 + i * SimulatedArena.getSimulationDt().in(Seconds);
+    }
+
+    return odometryTimeStamps;
   }
 }

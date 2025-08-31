@@ -10,7 +10,7 @@ import java.util.function.DoubleSupplier;
 /** how a controller interacts with the drive train */
 public class DriveScheme {
   // slow mode or fast mode
-  private static DoubleSupplier driveSpeedModifier = () -> 0.4;
+  private static DoubleSupplier driveSpeedModifier = () -> 1.0;
 
   public static void configure(Drive drive, CommandXboxController controller) {
     // default command will periodically run in drive train, in this case it periodically updates
@@ -66,6 +66,6 @@ public class DriveScheme {
   }
 
   public static void setSlowMode() {
-    driveSpeedModifier = () -> 0.4;
+    driveSpeedModifier = () -> 1.0;
   }
 }

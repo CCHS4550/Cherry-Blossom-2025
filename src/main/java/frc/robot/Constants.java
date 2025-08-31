@@ -13,6 +13,8 @@
 
 package frc.robot;
 
+import static edu.wpi.first.units.Units.*;
+
 import com.pathplanner.lib.config.ModuleConfig;
 import com.pathplanner.lib.config.RobotConfig;
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
@@ -24,6 +26,9 @@ import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.RobotBase;
+import org.ironmaple.simulation.drivesims.COTS;
+import org.ironmaple.simulation.drivesims.configs.DriveTrainSimulationConfig;
+import org.ironmaple.simulation.drivesims.configs.SwerveModuleSimulationConfig;
 
 /**
  * This class defines the runtime mode used by AdvantageKit. The mode is always "real" when running
@@ -44,7 +49,6 @@ public final class Constants {
     /** Replaying from a log file. */
     REPLAY
   }
-
 
   public static final class VisionConstants {
     public static AprilTagFieldLayout aprilTagLayout =
@@ -193,6 +197,24 @@ public final class Constants {
                 driveMotorCurrentLimit,
                 1),
             moduleTranslations);
+
+    // information for out simulated robot
+    public static final DriveTrainSimulationConfig mapleSimConfig =
+        DriveTrainSimulationConfig.Default()
+            .withCustomModuleTranslations(moduleTranslations)
+            .withRobotMass(Kilogram.of(robotMassKg))
+            .withGyro(COTS.ofPigeon2())
+            .withSwerveModule(
+                new SwerveModuleSimulationConfig(
+                    driveGearbox,
+                    turnGearbox,
+                    driveMotorReduction,
+                    turnMotorReduction,
+                    Volts.of(0.1),
+                    Volts.of(0.1),
+                    Meters.of(wheelRadiusMeters),
+                    KilogramSquareMeters.of(0.02),
+                    wheelCOF));
   }
 
   public final class PneumaticConstants {
