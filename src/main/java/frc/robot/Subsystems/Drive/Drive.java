@@ -105,6 +105,22 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
   private double maxOptionalTurnVeloRadiansPerSec = Double.NaN;
   private double maxVelocityOutputForDriveToPoint = Units.feetToMeters(10.0);
 
+  /**
+   * Pid Controller for drive at angle.
+   *
+   * <p>creates a new pid controller with built in trapezoidal motion this is necesary because while
+   * the pid controller built into the turn motor can handle turning a singular wheel to an angle, a
+   * seperate pid must be called to give the overall angles that the bot is hitting
+   */
+  ProfiledPIDController angleController =
+      new ProfiledPIDController(
+          Constants.DriveConstants.ANGLE_KP,
+          0.0,
+          Constants.DriveConstants.ANGLE_KD,
+          new TrapezoidProfile.Constraints(
+              Constants.DriveConstants.ANGLE_MAX_VELOCITY,
+              Constants.DriveConstants.ANGLE_MAX_ACCELERATION));
+
   // pid controllers for drive to point, not fully tested so unsure if seperation of auto and teleop
   // is needed, but lower auto values also mean slower more accurate pid
   private final PIDController autoDriveToPointController = new PIDController(3.0, 0, 0.1);
@@ -125,6 +141,8 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
   // state we want drive train to be in
 
   // used for drive simulation
+  // wont be used unless for sim
+  @SuppressWarnings("unused")
   private final Consumer<Pose2d> resetSimulationPoseCallBack;
 
   public enum WantedState {
@@ -229,6 +247,9 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
         Constants.DriveConstants.ppConfig,
         () -> DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red,
         this);
+
+    // make sure our angle controller wraps angles properly
+    angleController.enableContinuousInput(-Math.PI, Math.PI);
 
     // use our logged AD* algorithm as the pathfinder
     Pathfinding.setPathfinder(new LocalADStarAK());
@@ -578,21 +599,6 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
    */
   public void driveAtAngle(double xInput, double yInput, Rotation2d angle) {
 
-    /**
-     * create a new pid controller with built in trapezoidal motion this is necesary because while
-     * the pid controller built into the turn motor can handle turning a singular wheel to an angle,
-     * a seperate pid must be called to give the overall angles that the bot is hitting
-     */
-    ProfiledPIDController angleController =
-        new ProfiledPIDController(
-            Constants.DriveConstants.ANGLE_KP,
-            0.0,
-            Constants.DriveConstants.ANGLE_KD,
-            new TrapezoidProfile.Constraints(
-                Constants.DriveConstants.ANGLE_MAX_VELOCITY,
-                Constants.DriveConstants.ANGLE_MAX_ACCELERATION));
-    angleController.enableContinuousInput(-Math.PI, Math.PI);
-
     // convert the 2 seperate x & y inputs into an overall translation 2d of 1 linear speed, just
     // found as the hypotenuse of the x & y
     Translation2d linearVelocity = getLinearVelocityFromXY(xInput, yInput);
@@ -629,21 +635,6 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
    * @param maxTurnVelo the max omega speed of the bot, in radians per second
    */
   public void driveAtAngle(double xInput, double yInput, Rotation2d angle, double maxTurnVelo) {
-    /**
-     * create a new pid controller with built in trapezoidal motion this is necesary because while
-     * the pid controller built into the turn motor can handle turning a singular wheel to an angle,
-     * a seperate pid must be called to give the overall angles that the bot is hitting
-     */
-    ProfiledPIDController angleController =
-        new ProfiledPIDController(
-            Constants.DriveConstants.ANGLE_KP,
-            0.0,
-            Constants.DriveConstants.ANGLE_KD,
-            new TrapezoidProfile.Constraints(
-                Constants.DriveConstants.ANGLE_MAX_VELOCITY,
-                Constants.DriveConstants.ANGLE_MAX_ACCELERATION));
-    angleController.enableContinuousInput(-Math.PI, Math.PI);
-
     // convert the 2 seperate x & y inputs into an overall translation 2d of 1 linear speed, just
     // found as the hypotenuse of the x & y
     Translation2d linearVelocity = getLinearVelocityFromXY(xInput, yInput);

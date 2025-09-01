@@ -28,6 +28,7 @@ import java.util.function.DoubleSupplier;
 public class ElevationIOSpark implements ElevationIO {
 
   // the limit switch
+  // commented out for testing purposes
   private final DigitalInput limitSwitch;
 
   // the motors and encoders of the elevation subsystem

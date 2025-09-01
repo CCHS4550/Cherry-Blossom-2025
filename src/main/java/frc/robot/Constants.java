@@ -79,14 +79,14 @@ public final class Constants {
   }
 
   public static final class DriveConstants {
-    public static final double deadband = 0.0;
+    public static final double deadband = 0.2;
     public static final double driveToPointStaticFrictionConstant = 0.02;
     public static final double maxSpeedMetersPerSec = 4.8;
     public static final double odometryFrequency = 100.0; // Hz
 
     // TODO: URGENT, get physical bot constants from mechanical
-    public static final double trackWidth = Units.inchesToMeters(24.750000);
-    public static final double wheelBase = Units.inchesToMeters(24.750000);
+    public static final double trackWidth = Units.inchesToMeters(26.5);
+    public static final double wheelBase = Units.inchesToMeters(26.5);
     public static final double driveBaseRadius = Math.hypot(trackWidth / 2.0, wheelBase / 2.0);
     public static final Translation2d[] moduleTranslations =
         new Translation2d[] {
@@ -126,9 +126,10 @@ public final class Constants {
     public static final boolean backRightDriveInverted = true;
 
     // Drive motor configuration
-    public static final int driveMotorCurrentLimit = 50;
-    public static final double wheelRadiusMeters = Units.inchesToMeters(2);
-    public static final double driveMotorReduction = 6.12;
+    public static final int driveMotorCurrentLimit = 60;
+    public static final double wheelRadiusMeters = Units.inchesToMeters(1.5);
+    // public static final double driveMotorReduction = 6.12;
+    public static final double driveMotorReduction = (45.0 * 22.0) / (14.0 * 15.0);
     public static final DCMotor driveGearbox = DCMotor.getNeo550(1);
 
     // Drive encoder configuration
@@ -144,22 +145,21 @@ public final class Constants {
     public static final double driveKs = 0.16681;
     public static final double driveKv = 2.609;
     public static final double driveKa = 0.51582;
-    public static final double driveSimP = 0.05;
+    public static final double driveSimP = 0.01;
     public static final double driveSimD = 0.0;
     public static final double driveSimKs = 0.0;
     public static final double driveSimKv = 0.0789;
 
     // Turn motor configuration
     public static final int turnMotorCurrentLimit = 20;
-    public static final double turnMotorReduction = 12.8;
+    // public static final double turnMotorReduction = 12.8;
+    public static final double turnMotorReduction = 9424.0 / 203.0;
     public static final DCMotor turnGearbox = DCMotor.getNeo550(1);
 
     // Turn encoder configuration
     // TODO: URGENT, apply the gear reduction
-    public static final double turnEncoderPositionFactor =
-        2 * Math.PI / turnMotorReduction; // Rotations -> Radians
-    public static final double turnEncoderVelocityFactor =
-        (2 * Math.PI) / turnMotorReduction / 60.0; // RPM -> Rad/Sec
+    public static final double turnEncoderPositionFactor = 2 * Math.PI; // Rotations -> Radians
+    public static final double turnEncoderVelocityFactor = (2 * Math.PI) / 60.0; // RPM -> Rad/Sec
 
     // Turn PID configuration
     public static final double turnKp = 0.4;
@@ -182,7 +182,7 @@ public final class Constants {
 
     // PathPlanner configuration
     // TODO: set this to the correct values
-    public static final double robotMassKg = 74.088;
+    public static final double robotMassKg = 45;
     public static final double robotMOI = 6.883;
     public static final double wheelCOF = 1.2;
     public static final RobotConfig ppConfig =
