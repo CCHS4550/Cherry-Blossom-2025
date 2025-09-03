@@ -68,5 +68,11 @@ public class MechanismScheme {
         .rightTrigger()
         .and(controller.leftTrigger())
         .onTrue(new InstantCommand(() -> superstructure.setWantedState(wantedState.SHOOT_ALL)));
+
+    controller
+        .a()
+        .onTrue(
+            new InstantCommand(
+                () -> superstructure.setWantedState(wantedState.ROTATE_60_DEGREES_BOT_ORIENTED)));
   }
 }

@@ -23,6 +23,9 @@ import frc.robot.Constants;
 import frc.robot.Util.SparkUtil;
 import java.util.function.DoubleSupplier;
 
+// TODO: URGENT: investigate needing to either track wrapped inputs or change the class to work with
+// unwrapped
+
 // define a class that uses the interface RotationIO
 // used to initiate the hardware used on the row and define the interface methods
 public class RotationIOSpark implements RotationIO {
@@ -89,8 +92,6 @@ public class RotationIOSpark implements RotationIO {
      *
      * <p>feedbackSensor sets our sensor to the relative encoder
      *
-     * <p>position wrapping makes it loop from the given range which we set to 0 and 2pi
-     *
      * <p>then we set the pid configs ff = 0 because they do not take into account ks and their calc
      * isnt amazing instead we will implement ff as an arbff to be added later
      */
@@ -98,7 +99,7 @@ public class RotationIOSpark implements RotationIO {
         .closedLoop
         .feedbackSensor(FeedbackSensor.kPrimaryEncoder)
         .positionWrappingEnabled(true)
-        .positionWrappingInputRange(0, Math.PI * 2)
+        .positionWrappingInputRange(0, 2 * Math.PI)
         .pidf(
             Constants.MechanismConstants.RotationConstants.rotationKp,
             0,

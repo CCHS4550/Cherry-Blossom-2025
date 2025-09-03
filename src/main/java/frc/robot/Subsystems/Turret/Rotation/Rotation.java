@@ -13,6 +13,7 @@ import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Robotstate;
+import org.littletonrobotics.junction.Logger;
 
 /** creates a rotation than go spin freely or go to a robot oriented or field oriented angle */
 public class Rotation extends SubsystemBase {
@@ -98,6 +99,7 @@ public class Rotation extends SubsystemBase {
     synchronized (inputs) {
       // update the autologged inputs
       io.updateInputs(inputs);
+      Logger.processInputs("Rotation", inputs);
       // update the turrets angle according to the field
       updateFieldOrientedAngle();
 
@@ -287,6 +289,11 @@ public class Rotation extends SubsystemBase {
     runFieldOrientatedAngle();
   }
 
+  /** sets voltage to 0 se the motor actual stops when its supposed to */
+  public void halt() {
+    io.setRotationOpenLoop(0.0);
+  }
+
   /**
    * sets the rotation's wanted state should be the primary way of manipulating the rotation outside
    * of the class
@@ -294,6 +301,9 @@ public class Rotation extends SubsystemBase {
    * @param wantedState the desired state
    */
   public void setWantedState(wantedRotationState wantedRotation) {
+    if (wantedRotation == wantedRotationState.IDLE) {
+      halt();
+    }
     WantedState = wantedRotation;
   }
 
@@ -320,7 +330,7 @@ public class Rotation extends SubsystemBase {
     Rotation2d currentAngle = Rotation2d.fromRadians(inputs.rotationPositionRad);
     var delta = desired.minus(currentAngle);
     if (Math.abs(delta.getDegrees()) > 90.0) {
-      desired.times(-1);
+      desired = desired.times(-1);
       desired = desired.rotateBy(Rotation2d.kPi);
     }
     return desired;
@@ -336,7 +346,6 @@ public class Rotation extends SubsystemBase {
           radians) { // if we knew specifically what goal to go to we could set this in the class,
     // but because the state is goTo angle and not goto 60 degrees, we just set the
     // desired angle in superstructure or sontrol scheme
-    goal = new State(optimizeAngle(Rotation2d.fromRadians(radians)).getRadians(), 0);
     wantedRotationRadiansBotOriented = Rotation2d.fromRadians(radians);
   }
 

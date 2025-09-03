@@ -38,6 +38,7 @@ public class Superstructure extends SubsystemBase {
     ELEVATION_OPENLOOP_DOWN,
     ROTATION_OPENLOOP_CLOCKWISE,
     ROTATION_OPENLOOP_COUNTERCLOCKWISE,
+    ROTATE_60_DEGREES_BOT_ORIENTED,
     FILLING_AIR,
     SHOOT_ONE,
     SHOOT_ALL,
@@ -50,6 +51,7 @@ public class Superstructure extends SubsystemBase {
     ELEVATION_OPENLOOP_DOWN,
     ROTATION_OPENLOOP_CLOCKWISE,
     ROTATION_OPENLOOP_COUNTERCLOCKWISE,
+    ROTATE_60_DEGREES_BOT_ORIENTED,
     FILLING_AIR,
     SHOOT_ONE,
     SHOOT_ALL,
@@ -117,6 +119,7 @@ public class Superstructure extends SubsystemBase {
       case ELEVATION_OPENLOOP_DOWN -> systemState.ELEVATION_OPENLOOP_DOWN;
       case ROTATION_OPENLOOP_CLOCKWISE -> systemState.ROTATION_OPENLOOP_CLOCKWISE;
       case ROTATION_OPENLOOP_COUNTERCLOCKWISE -> systemState.ROTATION_OPENLOOP_COUNTERCLOCKWISE;
+      case ROTATE_60_DEGREES_BOT_ORIENTED -> systemState.ROTATE_60_DEGREES_BOT_ORIENTED;
       case FILLING_AIR -> systemState.FILLING_AIR;
       case SHOOT_ONE -> systemState.SHOOT_ONE;
       case SHOOT_ALL -> systemState.SHOOT_ALL;
@@ -140,10 +143,15 @@ public class Superstructure extends SubsystemBase {
         rotation.setWantedState(wantedRotationState.MANUAL);
         break;
       case ROTATION_OPENLOOP_COUNTERCLOCKWISE:
-        rotation.setManualVoltage(0);
+        rotation.setManualVoltage(-3);
         rotation.setWantedState(wantedRotationState.MANUAL);
+        break;
+      case ROTATE_60_DEGREES_BOT_ORIENTED:
+        rotation.setGoal(Math.PI / 3);
+        rotation.setWantedState(wantedRotationState.ROBOT_ORIENTED_ANGLE);
       case FILLING_AIR:
         pneumatics.setWantedState(wantedPneumaticsState.FILLING_AIR_TANK);
+        break;
       case SHOOT_ONE:
         if (!isRunningCommand) {
           shootThenIndex().schedule();
@@ -163,6 +171,7 @@ public class Superstructure extends SubsystemBase {
         rotation.setWantedState(wantedRotationState.IDLE);
         pneumatics.setWantedState(wantedPneumaticsState.IDLE);
         barrels.setWantedState(wantedBarrelState.IDLE);
+        break;
     }
   }
 

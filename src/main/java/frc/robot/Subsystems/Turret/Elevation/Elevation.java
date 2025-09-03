@@ -201,6 +201,10 @@ public class Elevation extends SubsystemBase {
     }
   }
 
+  public void halt() {
+    io.setElevationOpenLoop(0.0);
+  }
+
   /**
    * set the desired angle to goto
    *
@@ -236,6 +240,9 @@ public class Elevation extends SubsystemBase {
    * @param wanted the desired state
    */
   public void setWantedState(wantedElevationState wanted) {
+    if (wanted == wantedElevationState.IDLE) {
+      halt();
+    }
     WantedState = wanted;
   }
 }

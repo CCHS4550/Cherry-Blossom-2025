@@ -204,7 +204,7 @@ public class Vision extends SubsystemBase {
 
   /**
    * POORLY written method to determine if the observation used uses one of the april tags we wish
-   * to use TODO: write this with never nesting mindset
+   * to use TODO: write this with less nesting
    */
   public boolean rejectTagsFromTagAllowance(PoseObservation observation) {
     if (!Robotstate.getInstance().getIfAllowedTagsSpecified()) {
