@@ -16,6 +16,7 @@ import frc.robot.Subsystems.Turret.Pneumatics.Pneumatics;
 import frc.robot.Subsystems.Turret.Pneumatics.Pneumatics.wantedPneumaticsState;
 import frc.robot.Subsystems.Turret.Rotation.Rotation;
 import frc.robot.Subsystems.Turret.Rotation.Rotation.wantedRotationState;
+import org.littletonrobotics.junction.Logger;
 
 /** creates a periodic state machine used for determining the behavior of the entire robot */
 public class Superstructure extends SubsystemBase {
@@ -105,6 +106,8 @@ public class Superstructure extends SubsystemBase {
 
     // turn the states into desired output
     applyStates();
+    Logger.recordOutput("Subsystems/Superstructure/WantedState", WantedState);
+    Logger.recordOutput("Subsystems/Superstructure/SystemState", SystemState);
   }
 
   /**
@@ -149,6 +152,7 @@ public class Superstructure extends SubsystemBase {
       case ROTATE_60_DEGREES_BOT_ORIENTED:
         rotation.setGoal(Math.PI / 3);
         rotation.setWantedState(wantedRotationState.ROBOT_ORIENTED_ANGLE);
+        break;
       case FILLING_AIR:
         pneumatics.setWantedState(wantedPneumaticsState.FILLING_AIR_TANK);
         break;
