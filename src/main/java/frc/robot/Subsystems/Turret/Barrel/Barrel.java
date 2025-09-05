@@ -88,7 +88,15 @@ public class Barrel extends SubsystemBase {
   }
 
   public void setBarrelPos (Rotation2d angle){
-    barrelController.setReference(angle.getRadians(), SparkMax.)
+    barrelController.setReference(angle.getRadians(), SparkMax.ControlType.kMAXMotionPositionControl);
+  }
+
+  public Command setVoltage (double voltage){
+    return new RunCommand (()-> setBarrelVoltage(voltage));
+  }
+
+  public Command setPosition (Rotation2d angle){
+    return new RunCommand (()-> setBarrelPos(angle));
   }
 
 

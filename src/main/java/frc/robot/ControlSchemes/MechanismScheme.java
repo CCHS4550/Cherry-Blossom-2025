@@ -14,49 +14,41 @@ public class MechanismScheme {
   }
 
   /** sets button bindings */
-  public static void configureButtons(
-      Superstructure superstructure, CommandXboxController controller) {
+  public static void configureButtons(CommandXboxController controller) {
 
     // go up on DPAD UP
     controller
         .povUp()
-        .onTrue(
-            new InstantCommand(
-                () -> superstructure.setWantedState(wantedState.ELEVATION_OPENLOOP_UP)));
+        .whileTrue(
+            new RunCommand(
+                () -> elevation.setVoltage(1));
     controller
         .povUp()
-        .onFalse(new InstantCommand(() -> superstructure.setWantedState(wantedState.IDLE)));
+        .whileFalse(new RunCommand ()-> elevation.setVoltage(0));
 
     // go down on DPAD DOWN
     controller
         .povDown()
-        .onTrue(
-            new InstantCommand(
-                () -> superstructure.setWantedState(wantedState.ELEVATION_OPENLOOP_DOWN)));
+        .whileTrue(new RunCommand (()-> elevation.setVoltage(-1));
     controller
         .povDown()
-        .onFalse(new InstantCommand(() -> superstructure.setWantedState(wantedState.IDLE)));
+        .whileFalse(new RunCommand (()-> elevation.setVoltage(0)));
 
     // go right on DPAD right
     controller
         .povRight()
-        .onTrue(
-            new InstantCommand(
-                () -> superstructure.setWantedState(wantedState.ROTATION_OPENLOOP_CLOCKWISE)));
+        .whileTrue (new RunCommand (()-> rotation.setVoltage (1));
     controller
         .povRight()
-        .onFalse(new InstantCommand(() -> superstructure.setWantedState(wantedState.IDLE)));
+        .whileFalse(new RunCommand (()-> rotation.setVoltage (0)));
 
     // go left on DPAD left
     controller
         .povLeft()
-        .onTrue(
-            new InstantCommand(
-                () ->
-                    superstructure.setWantedState(wantedState.ROTATION_OPENLOOP_COUNTERCLOCKWISE)));
+        .whileTrue(new RunCommand (()-> rotation.setVoltage(-1)));
     controller
         .povLeft()
-        .onFalse(new InstantCommand(() -> superstructure.setWantedState(wantedState.IDLE)));
+        .whileFalse(new RunCommand (()-> rotation.setVoltage(0)));
 
     // shoot one on right trigger
     controller
