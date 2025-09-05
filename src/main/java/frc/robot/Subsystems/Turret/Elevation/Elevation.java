@@ -245,4 +245,8 @@ public class Elevation extends SubsystemBase {
     }
     WantedState = wanted;
   }
+
+  public Command setWantedStateCommand (wantedElevationState wanted){
+    new InstantCommand (()-> setWantedState(wanted));
+  }
 }

@@ -105,7 +105,7 @@ public class Rotation extends SubsystemBase {
 
       // stop the subsystem if disabled
       if (DriverStation.isDisabled()) {
-        setWantedState(
+        setWantedStateCommand(
             wantedRotationState
                 .IDLE); // this many set to 0 funcs is redundant but better safe than sorry
         SystemState = systemState.IDLE;
@@ -305,6 +305,10 @@ public class Rotation extends SubsystemBase {
       halt();
     }
     WantedState = wantedRotation;
+  }
+
+  public Command setWantedStateCommand (wantedRotationState wantedRotation){
+    return new InstantCommand (()-> setWantedState(wantedRotation));
   }
 
   /**

@@ -186,7 +186,7 @@ public class Pneumatics extends SubsystemBase {
         new WaitCommand(0.01),
         new InstantCommand(() -> isRunningCommand = false), // indicate the command is done
         new InstantCommand(
-            () -> setWantedState(wantedPneumaticsState.IDLE))); // set our wanted state to idle
+            () -> setWantedStateCommand(wantedPneumaticsState.IDLE))); // set our wanted state to idle
   }
 
   /**
@@ -197,6 +197,10 @@ public class Pneumatics extends SubsystemBase {
    */
   public void setWantedState(wantedPneumaticsState wantedPneumaticsState) {
     this.WantedPneumaticsState = wantedPneumaticsState;
+  }
+
+  public Command setWantedStateCommand (wantedPneumaticsState wantedPneumaticsState){
+    return new InstantCommand (()-> setWantedState(wantedPneumaticsState));
   }
 
   /**

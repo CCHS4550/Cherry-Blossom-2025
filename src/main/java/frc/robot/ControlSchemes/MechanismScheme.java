@@ -26,13 +26,13 @@ public class MechanismScheme {
             new InstantCommand(
                 () -> {
                     Logger.recordOutput("Elevation Open Loop Up Command", true);
-                    superstructure.setWantedState(wantedState.ELEVATION_OPENLOOP_UP));
+                    superstructure.setWantedStatCommande(wantedState.ELEVATION_OPENLOOP_UP));
                 });
     controller
         .povUp()
         .onFalse(new InstantCommand(() ->{
             Logger.recordOutput("Elevation Open Loop Up Command", false);
-            superstructure.setWantedState(wantedState.IDLE));
+            superstructure.setWantedStateCommand(wantedState.IDLE));
         });
 
     // go down on DPAD DOWN
@@ -42,13 +42,13 @@ public class MechanismScheme {
             new InstantCommand(
                 () -> {
                 Logger.recordOutput("Elevation Open Loop Down Command", true);
-                superstructure.setWantedState(wantedState.ELEVATION_OPENLOOP_DOWN));
+                superstructure.setWantedStateCommand(wantedState.ELEVATION_OPENLOOP_DOWN));
                 });
     controller
         .povDown()
         .onFalse(new InstantCommand(() -> {
             Logger.recordOutput("Elevation Open Loop Down Command", false);
-            superstructure.setWantedState(wantedState.IDLE));
+            superstructure.setWantedStateCommand(wantedState.IDLE));
         });
 
     // go right on DPAD right
@@ -58,13 +58,13 @@ public class MechanismScheme {
             new InstantCommand(
                 () -> {
                     Logger.recordOutput("Rotation Open Loop Clockwise Command", true);
-                    superstructure.setWantedState(wantedState.ROTATION_OPENLOOP_CLOCKWISE));
+                    superstructure.setWantedStateCommand(wantedState.ROTATION_OPENLOOP_CLOCKWISE));
                 });
     controller
         .povRight()
         .onFalse(new InstantCommand(() -> {
             Logger.recordOutput("Rotation Open Loop Clockwise Command", false);
-            superstructure.setWantedState(wantedState.IDLE));
+            superstructure.setWantedStateCommand(wantedState.IDLE));
         });
 
     // go left on DPAD left
@@ -74,13 +74,13 @@ public class MechanismScheme {
             new InstantCommand(
                 () ->{
                     Logger.recordOutput("Elevation Open Loop Counterclockwise Command", true);
-                    superstructure.setWantedState(wantedState.ROTATION_OPENLOOP_COUNTERCLOCKWISE));
+                    superstructure.setWantedStateCommand(wantedState.ROTATION_OPENLOOP_COUNTERCLOCKWISE));
                 });
     controller
         .povLeft()
         .onFalse(new InstantCommand(() -> {
             Logger.recordOutput("Elevation Open Loop Counterclockwise Command", false);
-            superstructure.setWantedState(wantedState.IDLE));
+            superstructure.setWantedStateCommand(wantedState.IDLE));
         });
 
     // shoot one on right trigger
@@ -88,7 +88,7 @@ public class MechanismScheme {
         .rightTrigger()
         .onTrue(new InstantCommand(() -> {
             Logger.recordOutput("Shoot One Command", true);
-            superstructure.setWantedState(wantedState.SHOOT_ONE));
+            superstructure.setWantedStateCommand(wantedState.SHOOT_ONE));
         });
 
     // shoot all on both press
@@ -97,7 +97,7 @@ public class MechanismScheme {
         .and(controller.leftTrigger())
         .onTrue(new InstantCommand(() -> {
             Logger.recordOutput("Shoot All Command", true);
-            superstructure.setWantedState(wantedState.SHOOT_ALL));
+            superstructure.setWantedStateCommand(wantedState.SHOOT_ALL));
         });
 
     controller
@@ -106,7 +106,7 @@ public class MechanismScheme {
             new InstantCommand(
                 () -> {
                     Logger.recordOutput("Rotate 60 Degrees Command", true);
-                    superstructure.setWantedState(wantedState.ROTATE_60_DEGREES_BOT_ORIENTED));
+                    superstructure.setWantedStateCommand(wantedState.ROTATE_60_DEGREES_BOT_ORIENTED));
                 });
   }
 }

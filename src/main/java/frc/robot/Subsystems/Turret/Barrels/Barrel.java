@@ -205,6 +205,10 @@ public class Barrel extends SubsystemBase {
     }
   }
 
+  public Command setWantedStateCommand (wantedBarrelState wantedBarrel){
+    return new InstantCommand (()-> setWantedState(wantedBarrel));
+  }
+
   /**
    * If the barrel is at angle, set the state to idle so the next time wanted state is INDEX, we
    * find the next angle
