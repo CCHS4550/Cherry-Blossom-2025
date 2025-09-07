@@ -1,16 +1,37 @@
 package frc.robot.ControlSchemes;
 
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Transform2d;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
+import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.ParallelCommandGroup;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
+import frc.robot.Constants;
 import frc.robot.Subsystems.Drive.Drive;
+import frc.robot.Subsystems.Drive.Drive.WantedState;
 import java.util.function.DoubleSupplier;
 
 /** how a controller interacts with the drive train */
 public class DriveScheme {
   // slow mode or fast mode
   private static DoubleSupplier driveSpeedModifier = () -> 1.0;
+
+  static Transform2d tagTransform =
+      new Transform2d(0.0, Units.inchesToMeters(20), Rotation2d.fromDegrees(150));
+  static Pose2d testPose =
+      new Pose2d(
+          Constants.VisionConstants.aprilTagLayout
+              .getTagPose(20)
+              .get()
+              .toPose2d()
+              .plus(tagTransform)
+              .getTranslation(),
+          Rotation2d.fromDegrees(60));
+  static Pose2d testPoseOG =
+      Constants.VisionConstants.aprilTagLayout.getTagPose(20).get().toPose2d();
 
   public static void configure(Drive drive, CommandXboxController controller) {
     // default command will periodically run in drive train, in this case it periodically updates
@@ -44,20 +65,25 @@ public class DriveScheme {
     controller.rightBumper().onFalse(Commands.runOnce(() -> setSlowMode()));
 
     // drive to point while button is held
-    // controller.a().whileTrue(Commands.run(() ->
-    // drive.setWantedState(WantedState.DRIVE_TO_POINT)));
-    // controller.a().onFalse(Commands.run(() -> drive.setWantedState(WantedState.TELEOP_DRIVE)));
+    controller
+        .a()
+        .onTrue(new InstantCommand(() -> drive.setWantedState(WantedState.DRIVE_TO_POINT)));
+    controller.a().onFalse(Commands.runOnce(() -> drive.setWantedState(WantedState.TELEOP_DRIVE)));
 
     // // path on the fly while button is held
-    // controller.b().whileTrue(Commands.run(() ->
-    // drive.setWantedState(WantedState.PATH_ON_THE_FLY)));
-    // controller.b().onFalse(Commands.run(() -> drive.setWantedState(WantedState.TELEOP_DRIVE)));
+    controller
+        .b()
+        .onTrue(new InstantCommand(() -> drive.setWantedState(WantedState.PATH_ON_THE_FLY)));
+    controller.b().onFalse(Commands.runOnce(() -> drive.setWantedState(WantedState.TELEOP_DRIVE)));
 
     // // drive at angle while button is held
-    // controller
-    //     .x()
-    //     .whileTrue(Commands.run(() -> drive.setWantedState(WantedState.TELEOP_DRIVE_AT_ANGLE)));
-    // controller.x().onFalse(Commands.run(() -> drive.setWantedState(WantedState.TELEOP_DRIVE)));
+    controller
+        .x()
+        .onTrue(new InstantCommand(() -> drive.setAngleLockAngle(Rotation2d.fromDegrees(60))));
+    controller
+        .x()
+        .whileTrue(Commands.runOnce(() -> drive.setWantedState(WantedState.TELEOP_DRIVE_AT_ANGLE)));
+    controller.x().onFalse(Commands.runOnce(() -> drive.setWantedState(WantedState.TELEOP_DRIVE)));
   }
 
   // setters for fast and slow mode

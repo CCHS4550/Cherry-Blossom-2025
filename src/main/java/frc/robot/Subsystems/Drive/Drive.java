@@ -1,6 +1,6 @@
 package frc.robot.Subsystems.Drive;
 
-import static edu.wpi.first.units.Units.Volts;
+import static edu.wpi.first.units.Units.*;
 
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.config.PIDConstants;
@@ -63,6 +63,19 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
   // java lock to implement thread safe
   static final Lock odometryLock = new ReentrantLock();
 
+  Transform2d tagTransform =
+      new Transform2d(0.0, Units.inchesToMeters(20), Rotation2d.fromDegrees(150));
+  Pose2d testPose =
+      new Pose2d(
+          Constants.VisionConstants.aprilTagLayout
+              .getTagPose(20)
+              .get()
+              .toPose2d()
+              .plus(tagTransform)
+              .getTranslation(),
+          Rotation2d.fromDegrees(60));
+  Pose2d testPoseOG = Constants.VisionConstants.aprilTagLayout.getTagPose(20).get().toPose2d();
+
   // declare gyro
   private final GyroIO
       gyroIO; // the gyro interface used by drive, will be defined as gyroPigeon if real
@@ -123,8 +136,8 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
 
   // pid controllers for drive to point, not fully tested so unsure if seperation of auto and teleop
   // is needed, but lower auto values also mean slower more accurate pid
-  private final PIDController autoDriveToPointController = new PIDController(3.0, 0, 0.1);
-  private final PIDController teleopDriveToPointController = new PIDController(3.6, 0, 0.1);
+  private final PIDController autoDriveToPointController = new PIDController(1.0, 0, 0.1);
+  private final PIDController teleopDriveToPointController = new PIDController(1.6, 0, 0.1);
   private Pose2d driveToPointPose = new Pose2d(); // pose to drive to
 
   // acceptable margin of error when going to a posse
@@ -275,6 +288,11 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
                 (state) -> Logger.recordOutput("Drive/SysIdState", state.toString())),
             new SysIdRoutine.Mechanism(
                 (voltage) -> runCharacterization(voltage.in(Volts)), null, this));
+    Logger.recordOutput("testing/adjust", testPose);
+    Logger.recordOutput("testing/og", testPoseOG);
+
+    setDriveToPointPose(new Pose2d(3, 3, new Rotation2d()));
+    setPathOntheFlyPose(new Pose2d(3, 3, new Rotation2d()));
   }
 
   @Override
@@ -375,6 +393,9 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
 
     Robotstate.getInstance().updateBotPoseAndSpeeds(getPose(), getChassisSpeeds());
     Robotstate.getInstance().updateRawGyroVelo(gyroInputs.yawVelocityRadPerSec);
+
+    Logger.recordOutput("Subsystems/Drive/ isRunningCommand", isRunningCommand);
+    Logger.recordOutput("Subsystems/Drive/ early cancel", shouldCancelEarly.getAsBoolean());
   }
 
   /**
@@ -599,6 +620,7 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
    */
   public void driveAtAngle(double xInput, double yInput, Rotation2d angle) {
 
+    System.out.println("running angle");
     // convert the 2 seperate x & y inputs into an overall translation 2d of 1 linear speed, just
     // found as the hypotenuse of the x & y
     Translation2d linearVelocity = getLinearVelocityFromXY(xInput, yInput);
@@ -606,6 +628,8 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
     // calculate the angle with our profiled pid controller
     double omega = angleController.calculate(getRotation().getRadians(), angle.getRadians());
 
+    Logger.recordOutput("Subsystems/Drive/ angle pid", omega);
+    Logger.recordOutput("Subsystems/Drive/ angle", angle);
     // convert to field relative speeds
     ChassisSpeeds speeds =
         new ChassisSpeeds(
@@ -1135,6 +1159,15 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
    */
   public void setAngleLockAngle(Rotation2d radians) {
     joystickDriveAtAngleAngle = radians;
+  }
+
+  /**
+   * sets pose for drive to point
+   *
+   * @param pose the desired pose to drive to
+   */
+  public void setDriveToPointPose(Pose2d pose) {
+    driveToPointPose = pose;
   }
 
   /**

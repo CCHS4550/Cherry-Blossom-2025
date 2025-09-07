@@ -71,6 +71,9 @@ public class RotationIOSpark implements RotationIO {
      * configures the encoder position factor converts rotations to radians while accounting for any
      * gearing
      *
+     * <p>note that this position is unwrapped, 2 rotations will show up as 4pi, behavior will be
+     * wrapped automatically for the pid loop so logic shouldnt be harmed
+     *
      * <p>velocity factor converts rotations/min to radians/sec while accounting for any gearing
      *
      * <p>this is now automatically applied anytime we request motor information

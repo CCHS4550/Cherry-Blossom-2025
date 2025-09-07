@@ -171,8 +171,8 @@ public final class Constants {
     public static final double turnPIDMaxInput = 2 * Math.PI; // Radians
 
     // angle lock constants
-    public static final double ANGLE_KP = 0.0;
-    public static final double ANGLE_KD = 0.0;
+    public static final double ANGLE_KP = 3.0;
+    public static final double ANGLE_KD = 0.2;
     public static final double ANGLE_MAX_VELOCITY = 8.0;
     public static final double ANGLE_MAX_ACCELERATION = 20.0;
     public static final double FF_START_DELAY = 2.0; // Secs

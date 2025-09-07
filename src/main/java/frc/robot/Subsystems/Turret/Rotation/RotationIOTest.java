@@ -5,6 +5,7 @@ import static frc.robot.Constants.MechanismConstants.RotationConstants.*;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Rotation2d;
 
+/** this class exists exclusively to bugfix the logic of higher level code */
 public class RotationIOTest implements RotationIO {
   private double appliedVoltage = 0.0;
   private double previousLocationRadians = 0.0;

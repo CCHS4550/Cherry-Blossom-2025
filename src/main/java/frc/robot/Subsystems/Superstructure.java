@@ -96,7 +96,7 @@ public class Superstructure extends SubsystemBase {
 
     // stop if disabled
     if (DriverStation.isDisabled()) {
-      setWantedStateCommand(wantedState.IDLE);
+      setWantedState(wantedState.IDLE);
       SystemState = systemState.IDLE;
     }
 
@@ -135,26 +135,26 @@ public class Superstructure extends SubsystemBase {
     switch (SystemState) {
       case ELEVATION_OPENLOOP_UP:
         elevation.setManualVoltage(3);
-        elevation.setWantedStateCommand(wantedElevationState.MANUAL);
+        elevation.setWantedState(wantedElevationState.MANUAL);
         break;
       case ELEVATION_OPENLOOP_DOWN:
         elevation.setManualVoltage(-3);
-        elevation.setWantedStateCommand(wantedElevationState.MANUAL);
+        elevation.setWantedState(wantedElevationState.MANUAL);
         break;
       case ROTATION_OPENLOOP_CLOCKWISE:
         rotation.setManualVoltage(3);
-        rotation.setWantedStateCommand(wantedRotationState.MANUAL);
+        rotation.setWantedState(wantedRotationState.MANUAL);
         break;
       case ROTATION_OPENLOOP_COUNTERCLOCKWISE:
         rotation.setManualVoltage(-3);
-        rotation.setWantedStateCommand(wantedRotationState.MANUAL);
+        rotation.setWantedState(wantedRotationState.MANUAL);
         break;
       case ROTATE_60_DEGREES_BOT_ORIENTED:
         rotation.setGoal(Math.PI / 3);
-        rotation.setWantedStateCommand(wantedRotationState.ROBOT_ORIENTED_ANGLE);
+        rotation.setWantedState(wantedRotationState.ROBOT_ORIENTED_ANGLE);
         break;
       case FILLING_AIR:
-        pneumatics.setWantedStateCommand(wantedPneumaticsState.FILLING_AIR_TANK);
+        pneumatics.setWantedState(wantedPneumaticsState.FILLING_AIR_TANK);
         break;
       case SHOOT_ONE:
         if (!isRunningCommand) {
@@ -171,10 +171,10 @@ public class Superstructure extends SubsystemBase {
         }
         break;
       case IDLE:
-        elevation.setWantedStateCommand(wantedElevationState.IDLE);
-        rotation.setWantedStateCommand(wantedRotationState.IDLE);
-        pneumatics.setWantedStateCommand(wantedPneumaticsState.IDLE);
-        barrels.setWantedStateCommand(wantedBarrelState.IDLE);
+        elevation.setWantedState(wantedElevationState.IDLE);
+        rotation.setWantedState(wantedRotationState.IDLE);
+        pneumatics.setWantedState(wantedPneumaticsState.IDLE);
+        barrels.setWantedState(wantedBarrelState.IDLE);
         break;
     }
   }
@@ -218,12 +218,12 @@ public class Superstructure extends SubsystemBase {
     return new SequentialCommandGroup(
         new InstantCommand(
             () ->
-                pneumatics.setWantedStateCommand(
+                pneumatics.setWantedState(
                     wantedPneumaticsState.SHOOT)), // shoot using the pneumatics state
         new WaitUntilCommand(
             () -> !pneumatics.isRunningCommand), // wait until that sequence has finishied
         new InstantCommand(
-            () -> barrels.setWantedStateCommand(wantedBarrelState.INDEX)), // index the barrel
+            () -> barrels.setWantedState(wantedBarrelState.INDEX)), // index the barrel
         new WaitUntilCommand(() -> barrels.isAtAngle), // wait until we are at angle, then move on
 
         // reset state if not in the SHOOT_ALL state, otherwise, return a null command
@@ -247,9 +247,5 @@ public class Superstructure extends SubsystemBase {
    */
   public void setWantedState(wantedState WantedState) {
     this.WantedState = WantedState;
-  }
-
-  public Command setWantedStateCommand (wantedState WantedState){
-    return new InstantCommand (()-> setWantedState(WantedState));
   }
 }
