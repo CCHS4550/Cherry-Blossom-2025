@@ -100,11 +100,11 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
   // values used for pathfinding to pose
   private Pose2d pathOntheFlyPose;
   private PathConstraints pathConstraintsOnTheFly;
-  private double maxTransSpeedMpsOnTheFly;
-  private double maxTransAccelMpssqOnTheFly;
-  private double maxRotSpeedRadPerSecOnTheFly;
-  private double maxRotAccelRadPerSecSqOnTheFly;
-  private double idealEndVeloOntheFly;
+  private double maxTransSpeedMpsOnTheFly = 20.0;
+  private double maxTransAccelMpssqOnTheFly = 25;
+  private double maxRotSpeedRadPerSecOnTheFly = 6;
+  private double maxRotAccelRadPerSecSqOnTheFly = 10;
+  private double idealEndVeloOntheFly = 0;
 
   // values to use during teleop, these will be periodically set during the default command
   private double xJoystickInput = 0.0;
@@ -136,8 +136,8 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
 
   // pid controllers for drive to point, not fully tested so unsure if seperation of auto and teleop
   // is needed, but lower auto values also mean slower more accurate pid
-  private final PIDController autoDriveToPointController = new PIDController(1.0, 0, 0.1);
-  private final PIDController teleopDriveToPointController = new PIDController(1.6, 0, 0.1);
+  private final PIDController autoDriveToPointController = new PIDController(0.3, 0, 0.1);
+  private final PIDController teleopDriveToPointController = new PIDController(0.6, 0, 0.1);
   private Pose2d driveToPointPose = new Pose2d(); // pose to drive to
 
   // acceptable margin of error when going to a posse
@@ -256,11 +256,12 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
         this::getChassisSpeeds,
         this::runVelocity,
         new PPHolonomicDriveController(
-            new PIDConstants(5.0, 0.0, 0.0), new PIDConstants(5.0, 0.0, 0.0)),
+            new PIDConstants(1.2, 0.0, 0.1), new PIDConstants(5.0, 0.0, 0.0)),
         Constants.DriveConstants.ppConfig,
         () -> DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red,
         this);
 
+    setPathConstraintsOnTheFly();
     // make sure our angle controller wraps angles properly
     angleController.enableContinuousInput(-Math.PI, Math.PI);
 
@@ -394,6 +395,8 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
     Robotstate.getInstance().updateBotPoseAndSpeeds(getPose(), getChassisSpeeds());
     Robotstate.getInstance().updateRawGyroVelo(gyroInputs.yawVelocityRadPerSec);
 
+    Logger.recordOutput("Subsystems/Drive/ pathOntheFlyGoal", pathOntheFlyPose);
+
     Logger.recordOutput("Subsystems/Drive/ isRunningCommand", isRunningCommand);
     Logger.recordOutput("Subsystems/Drive/ early cancel", shouldCancelEarly.getAsBoolean());
   }
@@ -416,19 +419,16 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
       setWantedState(WantedState.TELEOP_DRIVE);
     }
 
+    if (wantedState != WantedState.DRIVE_TO_POINT && wantedState != WantedState.PATH_ON_THE_FLY) {
+      setEarlyCancel(true);
+    }
+
     return switch (wantedState) {
       case SYS_ID -> SystemState.SYS_ID;
       case AUTO -> SystemState.AUTO;
       case TELEOP_DRIVE -> SystemState.TELEOP_DRIVE;
       case TELEOP_DRIVE_AT_ANGLE -> SystemState.TELEOP_DRIVE_AT_ANGLE;
-      case PATH_ON_THE_FLY -> {
-        // only set the state to PATH_ON_THE_FLY if we are not currently running a command
-        if (!isRunningCommand) {
-          yield SystemState.PATH_ON_THE_FLY;
-        } else {
-          yield SystemState.TELEOP_DRIVE;
-        }
-      }
+      case PATH_ON_THE_FLY -> SystemState.PATH_ON_THE_FLY;
       case DRIVE_TO_POINT -> SystemState.DRIVE_TO_POINT;
       default -> SystemState.IDLE;
     };
@@ -462,14 +462,9 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
         // simply calls autobuilders built in command
         // not the most accurate, should only be used for larger movements
         // only run if not already running a path on the fly
+        setPathConstraintsOnTheFly();
         if (!isRunningCommand) {
-          setPathConstraintsOnTheFly();
           isRunningCommand = true;
-          AutoBuilder.pathfindToPose(
-                  pathOntheFlyPose, pathConstraintsOnTheFly, idealEndVeloOntheFly)
-              .until(shouldCancelEarly)
-              .finallyDo(() -> isRunningCommand = false) // make sure we clear the flag
-              .schedule();
         }
         break;
       case DRIVE_TO_POINT:
@@ -770,6 +765,13 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
       driveAtAngle(
           xComponent, yComponent, driveToPointPose.getRotation(), maxOptionalTurnVeloRadiansPerSec);
     }
+  }
+
+  public Command pathOnTheFlyCommand() {
+    return AutoBuilder.pathfindToPose(
+            pathOntheFlyPose, pathConstraintsOnTheFly, idealEndVeloOntheFly)
+        .until(shouldCancelEarly)
+        .finallyDo(() -> isRunningCommand = false); // make sure we clear the flag
   }
 
   /**

@@ -94,6 +94,12 @@ public class Robot extends LoggedRobot {
   @Override
   public void robotPeriodic() {
     CommandScheduler.getInstance().run();
+
+    if (CommandScheduler.getInstance().requiring(robotContainer.drive) != null) {
+      Logger.recordOutput(
+          "running drive Command",
+          CommandScheduler.getInstance().requiring(robotContainer.drive).toString());
+    }
   }
 
   /** This function is called once when the robot is disabled. */

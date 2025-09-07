@@ -41,7 +41,7 @@ import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 public class RobotContainer {
 
   // subclasses of the robot
-  private final Drive drive;
+  public final Drive drive;
   // private final Vision vision;
   private final Barrel barrels;
   private final Elevation elevation;

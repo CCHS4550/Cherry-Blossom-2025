@@ -10,6 +10,7 @@ import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.ParallelCommandGroup;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.Constants;
+import frc.robot.DriveCommands;
 import frc.robot.Subsystems.Drive.Drive;
 import frc.robot.Subsystems.Drive.Drive.WantedState;
 import java.util.function.DoubleSupplier;
@@ -20,7 +21,8 @@ public class DriveScheme {
   private static DoubleSupplier driveSpeedModifier = () -> 1.0;
 
   static Transform2d tagTransform =
-      new Transform2d(0.0, Units.inchesToMeters(20), Rotation2d.fromDegrees(150));
+      new Transform2d(
+          Units.inchesToMeters(30), Units.inchesToMeters(30), Rotation2d.fromDegrees(150));
   static Pose2d testPose =
       new Pose2d(
           Constants.VisionConstants.aprilTagLayout
@@ -73,7 +75,12 @@ public class DriveScheme {
     // // path on the fly while button is held
     controller
         .b()
-        .onTrue(new InstantCommand(() -> drive.setWantedState(WantedState.PATH_ON_THE_FLY)));
+        .onTrue(
+            DriveCommands.pathOnTheFly(drive)
+                .beforeStarting(
+                    new InstantCommand(() -> System.out.println("runnign path on the fly")))
+                .beforeStarting(
+                    new InstantCommand(() -> drive.setWantedState(WantedState.PATH_ON_THE_FLY))));
     controller.b().onFalse(Commands.runOnce(() -> drive.setWantedState(WantedState.TELEOP_DRIVE)));
 
     // // drive at angle while button is held
@@ -84,6 +91,16 @@ public class DriveScheme {
         .x()
         .whileTrue(Commands.runOnce(() -> drive.setWantedState(WantedState.TELEOP_DRIVE_AT_ANGLE)));
     controller.x().onFalse(Commands.runOnce(() -> drive.setWantedState(WantedState.TELEOP_DRIVE)));
+
+    controller.y().onTrue(new InstantCommand(() -> drive.setDriveToPointPose(testPoseOG)));
+    controller.y().onTrue(new InstantCommand(() -> drive.setPathOntheFlyPose(testPose)));
+    controller
+        .y()
+        .onTrue(
+            DriveCommands.completeToPose(drive)
+                .beforeStarting(new InstantCommand(() -> drive.setPathOntheFlyPose(testPose)))
+                .beforeStarting(() -> drive.setWantedState(WantedState.PATH_ON_THE_FLY)));
+    controller.y().onFalse(Commands.runOnce(() -> drive.setWantedState(WantedState.TELEOP_DRIVE)));
   }
 
   // setters for fast and slow mode
