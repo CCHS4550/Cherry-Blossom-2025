@@ -101,7 +101,7 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
   private Pose2d pathOntheFlyPose;
   private PathConstraints pathConstraintsOnTheFly;
   private double maxTransSpeedMpsOnTheFly = 20.0;
-  private double maxTransAccelMpssqOnTheFly = 25;
+  private double maxTransAccelMpssqOnTheFly = 30;
   private double maxRotSpeedRadPerSecOnTheFly = 6;
   private double maxRotAccelRadPerSecSqOnTheFly = 10;
   private double idealEndVeloOntheFly = 0;
@@ -137,11 +137,11 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
   // pid controllers for drive to point, not fully tested so unsure if seperation of auto and teleop
   // is needed, but lower auto values also mean slower more accurate pid
   private final PIDController autoDriveToPointController = new PIDController(0.3, 0, 0.1);
-  private final PIDController teleopDriveToPointController = new PIDController(0.6, 0, 0.1);
+  private final PIDController teleopDriveToPointController = new PIDController(0.69, 0, 0.1);
   private Pose2d driveToPointPose = new Pose2d(); // pose to drive to
 
   // acceptable margin of error when going to a posse
-  private static final double goToPoseTranslationError = Units.inchesToMeters(0.5);
+  private static final double goToPoseTranslationError = Units.inchesToMeters(1);
 
   // potential bad practice
   // mainly used in path on the fly, nothing else uses command scheduler
@@ -256,7 +256,7 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
         this::getChassisSpeeds,
         this::runVelocity,
         new PPHolonomicDriveController(
-            new PIDConstants(1.2, 0.0, 0.1), new PIDConstants(5.0, 0.0, 0.0)),
+            new PIDConstants(1.6, 0.0, 0.3), new PIDConstants(5.0, 0.0, 0.0)),
         Constants.DriveConstants.ppConfig,
         () -> DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red,
         this);
@@ -396,6 +396,7 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
     Robotstate.getInstance().updateRawGyroVelo(gyroInputs.yawVelocityRadPerSec);
 
     Logger.recordOutput("Subsystems/Drive/ pathOntheFlyGoal", pathOntheFlyPose);
+    Logger.recordOutput("Subsystems/Drive/DriveDesiredPoint", driveToPointPose);
 
     Logger.recordOutput("Subsystems/Drive/ isRunningCommand", isRunningCommand);
     Logger.recordOutput("Subsystems/Drive/ early cancel", shouldCancelEarly.getAsBoolean());
@@ -755,7 +756,6 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
     Logger.recordOutput("Subsystems/Drive/DriveToPoint/velocityOutput", velocityOutput);
     Logger.recordOutput("Subsystems/Drive/DriveToPoint/linearDistance", linearDistance);
     Logger.recordOutput("Subsystems/Drive/DriveToPoint/directionOfTravel", directionOfTravel);
-    Logger.recordOutput("Subsystems/Drive/DriveToPoint/desiredPoint", driveToPointPose);
 
     // if a max turn speed has been set, use the turn limited drive the angle, otherwise use the
     // standard drive to angle
@@ -804,7 +804,8 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
       Logger.recordOutput("Subsystems/Drive/PathOnFlyTeleOp/distanceFromEndpoint", distance);
 
       // checks if at the pose, comparing 0 to our distance, because we want our distance to be 0
-      if (MathUtil.isNear(0.0, distance, goToPoseTranslationError)) {
+      // increased allowance of error because path on the fly is less accurate than drive to point
+      if (MathUtil.isNear(0.0, distance, goToPoseTranslationError * 3)) {
         setWantedState(
             WantedState.TELEOP_DRIVE); // go back to teleop, will also resest early cancel
         return false;

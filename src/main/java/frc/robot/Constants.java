@@ -72,10 +72,17 @@ public final class Constants {
           1.0 // Camera 1
         };
 
-    public static Transform3d cameraOneToRobot =
-        new Transform3d(0.0, 0.0, 0.0, new Rotation3d()); // fill with actual camera offsets
-    public static Transform3d cameraTwoToRobot =
-        new Transform3d(0.0, 0.0, 0.0, new Rotation3d()); // fill with actual camera offsets
+    // Camera names, must match names configured on coprocessor
+    public static String camera0Name = "camera_0";
+    public static String camera1Name = "camera_1";
+
+    // Robot to camera transforms
+    // (Not used by Limelight, configure in web UI instead)
+    public static Transform3d robotToCamera0 =
+        new Transform3d(0.2, 0.0, 0.2, new Rotation3d(0.0, -0.4, 0.0));
+    public static Transform3d robotToCamera1 =
+        new Transform3d(
+            -0.2, 0.0, 0.2, new Rotation3d(0.0, -0.4, Math.PI)); // fill with actual camera offsets
   }
 
   public static final class DriveConstants {

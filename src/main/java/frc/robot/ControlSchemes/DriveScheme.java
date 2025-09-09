@@ -22,7 +22,10 @@ public class DriveScheme {
 
   static Transform2d tagTransform =
       new Transform2d(
-          Units.inchesToMeters(30), Units.inchesToMeters(30), Rotation2d.fromDegrees(150));
+          Units.inchesToMeters(20), Units.inchesToMeters(50), Rotation2d.fromDegrees(150));
+  static Transform2d tagTransform2 =
+      new Transform2d(
+          Units.inchesToMeters(0), Units.inchesToMeters(60), Rotation2d.fromDegrees(60));
   static Pose2d testPose =
       new Pose2d(
           Constants.VisionConstants.aprilTagLayout
@@ -33,7 +36,7 @@ public class DriveScheme {
               .getTranslation(),
           Rotation2d.fromDegrees(60));
   static Pose2d testPoseOG =
-      Constants.VisionConstants.aprilTagLayout.getTagPose(20).get().toPose2d();
+      Constants.VisionConstants.aprilTagLayout.getTagPose(20).get().toPose2d().plus(tagTransform2);
 
   public static void configure(Drive drive, CommandXboxController controller) {
     // default command will periodically run in drive train, in this case it periodically updates
@@ -47,7 +50,10 @@ public class DriveScheme {
             Commands.run(
                 () ->
                     drive.setYJoystickInput(
-                        controller.getLeftY() * driveSpeedModifier.getAsDouble())),
+                        -controller.getLeftY()
+                            * driveSpeedModifier
+                                .getAsDouble())), // negative purely for my preference in sim, may
+            // be different
             Commands.run(
                 () ->
                     drive.setOmegaJoystickInput(
@@ -63,8 +69,8 @@ public class DriveScheme {
   private static void configureButtons(CommandXboxController controller, Drive drive) {
 
     // slow mode and fast mode
-    controller.rightBumper().onTrue(Commands.runOnce(() -> setFastMode()));
-    controller.rightBumper().onFalse(Commands.runOnce(() -> setSlowMode()));
+    // controller.rightBumper().onTrue(Commands.runOnce(() -> setFastMode()));
+    // controller.rightBumper().onFalse(Commands.runOnce(() -> setSlowMode()));
 
     // drive to point while button is held
     controller
@@ -92,15 +98,28 @@ public class DriveScheme {
         .whileTrue(Commands.runOnce(() -> drive.setWantedState(WantedState.TELEOP_DRIVE_AT_ANGLE)));
     controller.x().onFalse(Commands.runOnce(() -> drive.setWantedState(WantedState.TELEOP_DRIVE)));
 
-    controller.y().onTrue(new InstantCommand(() -> drive.setDriveToPointPose(testPoseOG)));
-    controller.y().onTrue(new InstantCommand(() -> drive.setPathOntheFlyPose(testPose)));
     controller
         .y()
         .onTrue(
             DriveCommands.completeToPose(drive)
+                .beforeStarting(
+                    new InstantCommand(() -> System.out.println("runnign path on the fly")))
+                .beforeStarting(new InstantCommand(() -> drive.setIdealEndVeloOntheFly(3)))
+                .beforeStarting(new InstantCommand(() -> drive.setDriveToPointPose(testPoseOG)))
                 .beforeStarting(new InstantCommand(() -> drive.setPathOntheFlyPose(testPose)))
                 .beforeStarting(() -> drive.setWantedState(WantedState.PATH_ON_THE_FLY)));
-    controller.y().onFalse(Commands.runOnce(() -> drive.setWantedState(WantedState.TELEOP_DRIVE)));
+    controller
+        .y()
+        .onFalse(Commands.runOnce(() -> drive.setWantedState(WantedState.TELEOP_DRIVE), drive));
+
+    controller
+        .rightBumper()
+        .onTrue(
+            Commands.runOnce(() -> drive.setDriveToPointPose(new Pose2d(3, 3, new Rotation2d()))));
+    controller
+        .leftBumper()
+        .onFalse(
+            Commands.runOnce(() -> drive.setPathOntheFlyPose(new Pose2d(3, 3, new Rotation2d()))));
   }
 
   // setters for fast and slow mode

@@ -36,6 +36,11 @@ public class VisionIOSim extends VisionIOPhotonvision {
 
     // Add sim camera
     var cameraProperties = new SimCameraProperties();
+
+    cameraProperties.setFPS(20);
+    // The average and standard deviation in milliseconds of image data latency.
+    cameraProperties.setAvgLatencyMs(35);
+    cameraProperties.setLatencyStdDevMs(5);
     cameraSim = new PhotonCameraSim(camera, cameraProperties);
     visionSim.addCamera(cameraSim, robotToCamera);
   }
