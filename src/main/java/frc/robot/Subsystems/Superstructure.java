@@ -39,6 +39,7 @@ public class Superstructure extends SubsystemBase {
     ELEVATION_OPENLOOP_DOWN,
     ROTATION_OPENLOOP_CLOCKWISE,
     ROTATION_OPENLOOP_COUNTERCLOCKWISE,
+    BARREL_TEST,
     ROTATE_60_DEGREES_BOT_ORIENTED,
     FILLING_AIR,
     SHOOT_ONE,
@@ -52,6 +53,7 @@ public class Superstructure extends SubsystemBase {
     ELEVATION_OPENLOOP_DOWN,
     ROTATION_OPENLOOP_CLOCKWISE,
     ROTATION_OPENLOOP_COUNTERCLOCKWISE,
+    BARREL_TEST,
     ROTATE_60_DEGREES_BOT_ORIENTED,
     FILLING_AIR,
     SHOOT_ONE,
@@ -123,6 +125,7 @@ public class Superstructure extends SubsystemBase {
       case ROTATION_OPENLOOP_CLOCKWISE -> systemState.ROTATION_OPENLOOP_CLOCKWISE;
       case ROTATION_OPENLOOP_COUNTERCLOCKWISE -> systemState.ROTATION_OPENLOOP_COUNTERCLOCKWISE;
       case ROTATE_60_DEGREES_BOT_ORIENTED -> systemState.ROTATE_60_DEGREES_BOT_ORIENTED;
+      case BARREL_TEST -> systemState.BARREL_TEST;
       case FILLING_AIR -> systemState.FILLING_AIR;
       case SHOOT_ONE -> systemState.SHOOT_ONE;
       case SHOOT_ALL -> systemState.SHOOT_ALL;
@@ -148,6 +151,10 @@ public class Superstructure extends SubsystemBase {
       case ROTATION_OPENLOOP_COUNTERCLOCKWISE:
         rotation.setManualVoltage(-3);
         rotation.setWantedState(wantedRotationState.MANUAL);
+        break;
+      case BARREL_TEST:
+        barrels.setWantedState(wantedBarrelState.TEST);
+        System.out.println("superstructure called");
         break;
       case ROTATE_60_DEGREES_BOT_ORIENTED:
         rotation.setGoal(Math.PI / 3);

@@ -140,13 +140,13 @@ public class Elevation extends SubsystemBase {
       case CHARACTERIZATION:
         break;
       case MANUAL: // don't let the manual voltage apply if we are beyond the safe limit
-        if (beyondSafeLimit()) {
-          stopHittingLimit();
-          break;
-        } else {
-          io.setElevationOpenLoop(manualControlVoltage);
-          break;
-        }
+        // if (beyondSafeLimit()) {
+        //   stopHittingLimit();
+        //   break;
+        // } else {
+        io.setElevationOpenLoop(manualControlVoltage);
+        break;
+        // }
       case GOTO_ANGLE:
         gotoAngle();
         break;
@@ -159,11 +159,11 @@ public class Elevation extends SubsystemBase {
    * @return if are angle is beyond the acceptable range or if we have hit the limit switch
    */
   public boolean beyondSafeLimit() {
-    if (inputs.elevationPositionRad >= Math.PI / 2 // this might be too big idk
-        || inputs.elevationPositionRad < 0
-        || inputs.limitSwitchHit) {
-      return true;
-    }
+    // if (inputs.elevationPositionRad >= Math.PI / 2 // this might be too big idk
+    //     || inputs.elevationPositionRad < 0
+    //     || inputs.limitSwitchHit) {
+    //   return true;
+    // }
     return false;
   }
 

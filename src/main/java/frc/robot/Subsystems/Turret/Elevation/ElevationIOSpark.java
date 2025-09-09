@@ -159,7 +159,7 @@ public class ElevationIOSpark implements ElevationIO {
         Constants.MechanismConstants.ElevationConstants.elevationTwoInverted);
 
     // do whatever the primary motor does, so no fine control of this motor needed
-    elevationTwoConfig.follow(elevationSpark);
+    // this doesn't work TODO: set the motor config properly
 
     /**
      * idleMode is Brake, stay at position when stopped set the smart current limit to avoid going
@@ -278,6 +278,7 @@ public class ElevationIOSpark implements ElevationIO {
   @Override
   public void setElevationOpenLoop(double voltage) {
     elevationSpark.setVoltage(voltage);
+    elevationSparkTwo.setVoltage(voltage);
   }
 
   /**

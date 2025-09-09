@@ -155,6 +155,7 @@ public class Barrel extends SubsystemBase {
       case CHARACTERIZATION:
         break;
       case TEST:
+        System.out.println("barrel called");
         io.setOpenLoop(manualControlVoltage);
         break;
       case INDEX:
@@ -191,6 +192,10 @@ public class Barrel extends SubsystemBase {
     goal = new State(angle.getRadians(), 0);
     barrelAngle = angle;
   }
+
+  public void halt() {
+    io.setOpenLoop(0.0);
+  }
   /**
    * sets the barrel's wanted state should be the primary way of manipulating the barrel outside of
    * the class
@@ -202,6 +207,10 @@ public class Barrel extends SubsystemBase {
     if (wantedBarrel == wantedBarrelState.INDEX) {
       isAtAngle = false;
       nextAngle();
+    }
+
+    if (wantedBarrel == wantedBarrelState.IDLE) {
+      halt();
     }
   }
   /**

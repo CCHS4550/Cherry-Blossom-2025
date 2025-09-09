@@ -104,10 +104,10 @@ public final class Constants {
         };
 
     // Zeroed rotation values for each module, see setup instructions
-    public static final Rotation2d frontLeftOffset = new Rotation2d(0.0);
-    public static final Rotation2d frontRightOffset = new Rotation2d(0.0);
-    public static final Rotation2d backLeftOffset = new Rotation2d(0.0);
-    public static final Rotation2d backRightOffset = new Rotation2d(0.0);
+    public static final Rotation2d frontLeftOffset = new Rotation2d().fromDegrees(5.6393);
+    public static final Rotation2d frontRightOffset = new Rotation2d().fromDegrees(2.348);
+    public static final Rotation2d backLeftOffset = new Rotation2d().fromDegrees(1.7729);
+    public static final Rotation2d backRightOffset = new Rotation2d().fromDegrees(5.965215);
 
     // Device CAN IDs
     public static final int pigeonCanId = 9; // TODO: URGENT, switch to a nav x
@@ -134,9 +134,9 @@ public final class Constants {
 
     // Drive motor configuration
     public static final int driveMotorCurrentLimit = 60;
-    public static final double wheelRadiusMeters = Units.inchesToMeters(1.5);
-    // public static final double driveMotorReduction = 6.12;
-    public static final double driveMotorReduction = (45.0 * 22.0) / (14.0 * 15.0);
+    public static final double wheelRadiusMeters = Units.inchesToMeters(2);
+    public static final double driveMotorReduction = 6.12;
+    // public static final double driveMotorReduction = (45.0 * 22.0) / (14.0 * 15.0);
     public static final DCMotor driveGearbox = DCMotor.getNeo550(1);
 
     // Drive encoder configuration
@@ -159,8 +159,8 @@ public final class Constants {
 
     // Turn motor configuration
     public static final int turnMotorCurrentLimit = 20;
-    // public static final double turnMotorReduction = 12.8;
-    public static final double turnMotorReduction = 9424.0 / 203.0;
+    public static final double turnMotorReduction = 12.8;
+    // public static final double turnMotorReduction = 9424.0 / 203.0;
     public static final DCMotor turnGearbox = DCMotor.getNeo550(1);
 
     // Turn encoder configuration
@@ -278,7 +278,7 @@ public final class Constants {
 
       // motor config 2
       public static final int elevationCanIDTwo = 12;
-      public static final boolean elevationTwoInverted = false;
+      public static final boolean elevationTwoInverted = true;
       public static final int elevationTwoCurrentLimit = 60;
 
       // limit switch
@@ -306,7 +306,7 @@ public final class Constants {
       public static final int barrelCanID = 13;
       public static final boolean barrelInverted = false;
       public static final int barrelCurrentLimit =
-          40; // 80 is generally considered too high, though it is the default value
+          60; // 80 is generally considered too high, though it is the default value
       public static final double barrelEncoderPositionFactor = (2 * Math.PI) * (1 / 35.166);
       public static final double barrelEncoderVeloFactor = ((2 * Math.PI) * (1 / 35.166) * 0.0166);
 
