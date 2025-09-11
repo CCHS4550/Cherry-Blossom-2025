@@ -89,7 +89,7 @@ public final class Constants {
     public static final double deadband = 0.2;
     public static final double driveToPointStaticFrictionConstant = 0.02;
     public static final double maxSpeedMetersPerSec = 4.8;
-    public static final double odometryFrequency = 100.0; // Hz
+    public static final double odometryFrequency = 80.0; // Hz
 
     // TODO: URGENT, get physical bot constants from mechanical
     public static final double trackWidth = Units.inchesToMeters(26.5);
@@ -104,10 +104,10 @@ public final class Constants {
         };
 
     // Zeroed rotation values for each module, see setup instructions
-    public static final Rotation2d frontLeftOffset = new Rotation2d().fromDegrees(5.6393);
-    public static final Rotation2d frontRightOffset = new Rotation2d().fromDegrees(2.348);
-    public static final Rotation2d backLeftOffset = new Rotation2d().fromDegrees(1.7729);
-    public static final Rotation2d backRightOffset = new Rotation2d().fromDegrees(5.965215);
+    public static final Rotation2d frontLeftOffset = Rotation2d.fromRadians(5.6393);
+    public static final Rotation2d frontRightOffset = Rotation2d.fromRadians(2.348);
+    public static final Rotation2d backRightOffset = Rotation2d.fromRadians(1.7729);
+    public static final Rotation2d backLeftOffset = Rotation2d.fromRadians(5.965215);
 
     // Device CAN IDs
     public static final int pigeonCanId = 9; // TODO: URGENT, switch to a nav x
@@ -121,6 +121,11 @@ public final class Constants {
     public static final int frontLeftTurnCanId = 6;
     public static final int backRightTurnCanId = 1;
     public static final int backLeftTurnCanId = 8;
+
+    public static final int frontRightTurnEncoder = 1;
+    public static final int frontLeftTurnEncoder = 3;
+    public static final int backRightTurnEncoder = 0;
+    public static final int backLeftTurnEncoder = 2;
 
     public static final boolean frontLeftTurnInverted = true;
     public static final boolean frontRightTurnInverted = true;
@@ -146,7 +151,7 @@ public final class Constants {
         (2 * Math.PI) / 60.0 / driveMotorReduction; // Rotor RPM -> Wheel Rad/Sec
 
     // Drive PID configuration
-    public static final double driveKp = 1.0;
+    public static final double driveKp = 0.05;
     public static final double driveKd = 0.0;
 
     public static final double driveKs = 0.16681;
@@ -158,7 +163,7 @@ public final class Constants {
     public static final double driveSimKv = 0.0789;
 
     // Turn motor configuration
-    public static final int turnMotorCurrentLimit = 20;
+    public static final int turnMotorCurrentLimit = 60;
     public static final double turnMotorReduction = 12.8;
     // public static final double turnMotorReduction = 9424.0 / 203.0;
     public static final DCMotor turnGearbox = DCMotor.getNeo550(1);
@@ -169,7 +174,7 @@ public final class Constants {
     public static final double turnEncoderVelocityFactor = (2 * Math.PI) / 60.0; // RPM -> Rad/Sec
 
     // Turn PID configuration
-    public static final double turnKp = 0.4;
+    public static final double turnKp = 2.0;
     public static final double turnKi = 0.0;
     public static final double turnKd = 0.0;
     public static final double turnSimP = 8.0;

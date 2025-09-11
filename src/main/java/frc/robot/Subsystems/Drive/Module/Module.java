@@ -55,6 +55,8 @@ public class Module {
     io.updateInputs(inputs);
     Logger.processInputs("Drive/Module" + Integer.toString(index), inputs);
 
+    Logger.recordOutput(
+        "Drive/Module" + Integer.toString(index) + "testRadians", inputs.turnPosition.getRadians());
     // create a new array of swervemodule positions for the amount of timestamps we have
     int sampleCount = inputs.odometryTimestamps.length;
     odometryPositions = new SwerveModulePosition[sampleCount];
@@ -94,8 +96,19 @@ public class Module {
    * @param output volts
    */
   public void runCharacterization(double output) {
+    // io.setTurnOpenLoop(output);
+    io.setTurnPos(Rotation2d.fromDegrees(0));
+    // io.setDriveOpenLoop(output);
+  }
+
+  /**
+   * runs a motor voltage
+   *
+   * @param output volts
+   */
+  public void runOpenLoopTest(double output) {
     io.setDriveOpenLoop(output);
-    io.setTurnPos(new Rotation2d());
+    io.setTurnOpenLoop(output);
   }
 
   // halts movement of motors

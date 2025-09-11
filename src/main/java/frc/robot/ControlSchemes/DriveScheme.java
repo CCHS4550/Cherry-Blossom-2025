@@ -47,7 +47,7 @@ public class DriveScheme {
             Commands.run(
                 () ->
                     drive.setYJoystickInput(
-                        -controller.getLeftY() * driveSpeedModifier.getAsDouble())),
+                        controller.getLeftY() * driveSpeedModifier.getAsDouble())),
             Commands.run(
                 () ->
                     drive.setOmegaJoystickInput(

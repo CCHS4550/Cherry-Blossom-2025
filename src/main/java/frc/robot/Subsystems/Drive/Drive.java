@@ -239,8 +239,7 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
 
     // initiate robot state with null values
     // TODO: maybe do this better
-    Robotstate.getInstance()
-        .updateBotPoseAndSpeeds(new Pose2d(3, 3, new Rotation2d()), new ChassisSpeeds());
+    Robotstate.getInstance().updateBotPoseAndSpeeds(new Pose2d(), new ChassisSpeeds());
     Robotstate.getInstance().updateRawGyroVelo(0.0);
 
     // Usage reporting
@@ -392,6 +391,10 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
     // turn the states into desired output
     applyStates();
 
+    // for (int i = 0; i < 4; i++) {
+    //   modules[i].runCharacterization(10);
+    // }
+
     Robotstate.getInstance().updateBotPoseAndSpeeds(getPose(), getChassisSpeeds());
     Robotstate.getInstance().updateRawGyroVelo(gyroInputs.yawVelocityRadPerSec);
 
@@ -509,7 +512,8 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
 
     // set all modules to our found states. Note that we still have to optomize our wheel angle for
     // better wraparound
-    for (int i = 0; i < 4; i++) {
+    // set to 3 to ignore the broken swerve module? fix once fixed
+    for (int i = 0; i < 3; i++) {
       modules[i].runSwerveState(setPointStates[i]);
     }
 

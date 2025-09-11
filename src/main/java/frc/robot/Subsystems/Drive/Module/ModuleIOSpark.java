@@ -1,8 +1,9 @@
 package frc.robot.Subsystems.Drive.Module;
 
-import static frc.robot.Util.SparkUtil.*;
+import static frc.robot.Util.SparkUtil.ifOK;
+import static frc.robot.Util.SparkUtil.ifOk;
+import static frc.robot.Util.SparkUtil.makeItWork;
 
-import com.revrobotics.AbsoluteEncoder;
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.spark.ClosedLoopSlot;
 import com.revrobotics.spark.SparkBase;
@@ -17,13 +18,21 @@ import com.revrobotics.spark.config.ClosedLoopConfig.FeedbackSensor;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 import com.revrobotics.spark.config.SparkMaxConfig;
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.filter.Debouncer;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.wpilibj.AnalogEncoder;
+import edu.wpi.first.wpilibj.AnalogInput;
 import frc.robot.Constants;
 import frc.robot.Subsystems.Drive.SparkOdometryThread;
 import frc.robot.Util.SparkUtil;
 import java.util.Queue;
 import java.util.function.DoubleSupplier;
+
+// This classes writing is fucked because the absolute encoder isnt part of the spark/ just talk to
+// electrical about it
+
+// TODO: make the offset math neater
 
 // define a class that uses the interface ModuleIO
 // used to initiate the hardware used on the row and define the interface methods
@@ -39,11 +48,18 @@ public class ModuleIOSpark implements ModuleIO {
   private final SparkBase driveSpark;
   private final SparkBase turnSpark;
   private final RelativeEncoder driveEncoder;
-  private final AbsoluteEncoder turnEncoder;
+  // private final AbsoluteEncoder turnEncoder;
+
+  private final AnalogEncoder absoluteEncoder;
+  private final AnalogInput absoluteAnalogInput;
+  private final int index;
 
   // closed loop control for both motors
   private final SparkClosedLoopController driveController;
   private final SparkClosedLoopController turnController;
+
+  private final PIDController turnPID =
+      new PIDController(Constants.DriveConstants.turnKp, 0.0, Constants.DriveConstants.turnKd);
 
   // odometry information for the module
   private final Queue<Double> timeQueue;
@@ -61,6 +77,8 @@ public class ModuleIOSpark implements ModuleIO {
    *     3 -> back right
    */
   public ModuleIOSpark(int module) {
+
+    index = module;
     // use switch statement to set offset for currect module
     rotationOffset =
         switch (module) {
@@ -81,6 +99,16 @@ public class ModuleIOSpark implements ModuleIO {
               default -> 0;
             },
             MotorType.kBrushless);
+    absoluteAnalogInput =
+        new AnalogInput(
+            switch (module) {
+              case 0 -> Constants.DriveConstants.frontLeftTurnEncoder;
+              case 1 -> Constants.DriveConstants.frontRightTurnEncoder;
+              case 2 -> Constants.DriveConstants.backLeftTurnEncoder;
+              case 3 -> Constants.DriveConstants.backRightTurnEncoder;
+              default -> 0;
+            });
+    absoluteEncoder = new AnalogEncoder(absoluteAnalogInput);
     // use switch statement to declare drive spark with right can ID
     driveSpark =
         new SparkMax(
@@ -94,11 +122,13 @@ public class ModuleIOSpark implements ModuleIO {
             MotorType.kBrushless);
     // declare encoders for both motors
     driveEncoder = driveSpark.getEncoder(); // don't need an absolute encoder for drive
-    turnEncoder = turnSpark.getAbsoluteEncoder();
+    // turnEncoder = turnSpark.getAbsoluteEncoder();
 
     // declare closed loop control for both motors
     driveController = driveSpark.getClosedLoopController();
     turnController = turnSpark.getClosedLoopController();
+
+    turnPID.enableContinuousInput(0, Math.PI);
 
     // turn motor config
     var turnConfig = new SparkMaxConfig();
@@ -130,11 +160,12 @@ public class ModuleIOSpark implements ModuleIO {
      *
      * <p>average depth is the bit size of the sampling depth, must be a power of 2
      */
-    turnConfig
-        .absoluteEncoder
-        .positionConversionFactor(Constants.DriveConstants.turnEncoderPositionFactor)
-        .velocityConversionFactor(Constants.DriveConstants.turnEncoderVelocityFactor)
-        .averageDepth(2);
+    // turnConfig
+    //     .absoluteEncoder
+    //     .positionConversionFactor(Constants.DriveConstants.turnEncoderPositionFactor)
+    //     .velocityConversionFactor(Constants.DriveConstants.turnEncoderVelocityFactor)
+    //     .setSparkMaxDataPortConfig()
+    //     .averageDepth(2);
 
     /**
      * each sparkmax supports up to 4 slots for a preconfigured pid that it can then call using
@@ -146,13 +177,13 @@ public class ModuleIOSpark implements ModuleIO {
      * <p>then we set the pid configs ff = 0 because they do not take into account ks and their calc
      * isnt amazing instead we will implement ff as an arbff to be added later
      */
-    turnConfig
-        .closedLoop
-        .feedbackSensor(FeedbackSensor.kAbsoluteEncoder)
-        .positionWrappingEnabled(true)
-        .positionWrappingInputRange(
-            Constants.DriveConstants.turnPIDMinInput, Constants.DriveConstants.turnPIDMaxInput)
-        .pidf(Constants.DriveConstants.turnKp, 0.0, Constants.DriveConstants.turnKd, 0.0);
+    // turnConfig
+    //     .closedLoop
+    //     .feedbackSensor(FeedbackSensor.kAlternateOrExternalEncoder)
+    //     .positionWrappingEnabled(true)
+    //     .positionWrappingInputRange(
+    //         Constants.DriveConstants.turnPIDMinInput, Constants.DriveConstants.turnPIDMaxInput)
+    //     .pidf(Constants.DriveConstants.turnKp, 0.0, Constants.DriveConstants.turnKd, 0.0);
 
     /**
      * configure how often the turnmotor receives/uses signals
@@ -278,7 +309,14 @@ public class ModuleIOSpark implements ModuleIO {
         SparkOdometryThread.getInstance()
             .registerSparkSignal(driveSpark, driveEncoder::getPosition);
     turnPosQueue =
-        SparkOdometryThread.getInstance().registerSparkSignal(turnSpark, turnEncoder::getPosition);
+        SparkOdometryThread.getInstance()
+            .registerSparkSignal(
+                turnSpark,
+                () ->
+                    Rotation2d.fromRotations(absoluteEncoder.get())
+                        .minus(rotationOffset)
+                        .plus(Rotation2d.kPi)
+                        .getRadians());
   }
 
   @Override
@@ -296,17 +334,21 @@ public class ModuleIOSpark implements ModuleIO {
 
     // update turn motor values, only accepting if no sticky fault present
     SparkUtil.stickyFault = false;
+    inputs.turnPosition =
+        Rotation2d.fromRotations(absoluteEncoder.get()).minus(rotationOffset).plus(Rotation2d.kPi);
     ifOk(
         turnSpark,
-        turnEncoder::getPosition,
-        (value) -> inputs.turnPosition = new Rotation2d(value).minus(rotationOffset));
-    ifOk(turnSpark, turnEncoder::getVelocity, (value) -> inputs.turnVelocityRadPerSec = value);
+        turnSpark.getEncoder()::getVelocity,
+        (value) -> inputs.turnVelocityRadPerSec = value);
     ifOK(
         turnSpark,
         new DoubleSupplier[] {turnSpark::getAppliedOutput, turnSpark::getBusVoltage},
         (values) -> inputs.turnAppliedVolts = values[0] * values[1]);
     ifOk(turnSpark, turnSpark::getOutputCurrent, (value) -> inputs.turnCurrentAmps = value);
     inputs.turnConnected = turnDebouncer.calculate(!SparkUtil.stickyFault);
+    inputs.turnEncoderVolts = getAbsoluteEncoderVolts();
+
+    getAbsoluteEncoderVolts();
 
     // add the odometry information from the queue to the autologged array, then clear the queue
     inputs.odometryTimestamps = timeQueue.stream().mapToDouble((Double value) -> value).toArray();
@@ -369,6 +411,19 @@ public class ModuleIOSpark implements ModuleIO {
             rotation.plus(rotationOffset).getRadians(),
             Constants.DriveConstants.turnPIDMinInput,
             Constants.DriveConstants.turnPIDMaxInput);
-    turnController.setReference(setPoint, ControlType.kPosition);
+    double volts =
+        turnPID.calculate(
+            (Rotation2d.fromRotations(absoluteEncoder.get()).plus(Rotation2d.kPi)).getRadians(),
+            setPoint);
+    System.out.println(volts);
+    setTurnOpenLoop(volts);
+  }
+
+  public double getAbsoluteEncoderVolts() {
+    return absoluteAnalogInput.getVoltage();
+  }
+
+  public double getRawRadians() {
+    return Rotation2d.fromRotations(absoluteEncoder.get()).getRadians();
   }
 }

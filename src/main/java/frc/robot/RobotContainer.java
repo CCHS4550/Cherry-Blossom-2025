@@ -33,7 +33,6 @@ import frc.robot.Subsystems.Turret.Rotation.RotationIOSpark;
 import frc.robot.Subsystems.Turret.Rotation.RotationIOTest;
 import frc.robot.Subsystems.Vision.Vision;
 import frc.robot.Subsystems.Vision.VisionIO;
-import frc.robot.Subsystems.Vision.VisionIOPhotonvision;
 import frc.robot.Subsystems.Vision.VisionIOSim;
 import org.ironmaple.simulation.SimulatedArena;
 import org.ironmaple.simulation.drivesims.SwerveDriveSimulation;
@@ -79,11 +78,7 @@ public class RobotContainer {
         pneumatics = new Pneumatics(new PneumaticsIOHardware());
         rotation = new Rotation(new RotationIOSpark());
 
-        vision =
-            new Vision(
-                drive,
-                new VisionIOPhotonvision(camera0Name, robotToCamera0),
-                new VisionIOPhotonvision(camera1Name, robotToCamera1));
+        vision = new Vision(drive, new VisionIO() {}, new VisionIO() {});
 
         // create the super structure
         superstructure = new Superstructure(pneumatics, barrels, elevation, rotation, drive);

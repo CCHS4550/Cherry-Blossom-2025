@@ -22,6 +22,7 @@ public interface ModuleIO {
     public double turnVelocityRadPerSec = 0.0;
     public double turnAppliedVolts = 0.0;
     public double turnCurrentAmps = 0.0;
+    public double turnEncoderVolts = 0.0;
 
     // tracking the odometry queues
     public double[] odometryTimestamps = new double[] {};
