@@ -1,12 +1,7 @@
 package frc.robot.Subsystems;
 
 import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.ConditionalCommand;
-import edu.wpi.first.wpilibj2.command.InstantCommand;
-import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
 import frc.robot.Subsystems.Drive.Drive;
 import frc.robot.Subsystems.Turret.Barrels.Barrel;
 import frc.robot.Subsystems.Turret.Barrels.Barrel.wantedBarrelState;
@@ -21,14 +16,14 @@ import org.littletonrobotics.junction.Logger;
 /** creates a periodic state machine used for determining the behavior of the entire robot */
 public class Superstructure extends SubsystemBase {
   // potential bad practice
-  private boolean
+  public boolean
       isRunningCommand; // exists in order to prevent the periodic state machine from calling the
   // same command
   // multiple times
 
   // the subsystems used in the super structure
-  Pneumatics pneumatics;
-  Barrel barrels;
+  public Pneumatics pneumatics;
+  public Barrel barrels;
   Elevation elevation;
   Rotation rotation;
   Drive drive;
@@ -62,7 +57,7 @@ public class Superstructure extends SubsystemBase {
   }
 
   // initialize states
-  wantedState WantedState = wantedState.IDLE;
+  public wantedState WantedState = wantedState.IDLE;
   systemState SystemState = systemState.IDLE;
 
   /**
@@ -164,18 +159,8 @@ public class Superstructure extends SubsystemBase {
         pneumatics.setWantedState(wantedPneumaticsState.FILLING_AIR_TANK);
         break;
       case SHOOT_ONE:
-        if (!isRunningCommand) {
-          shootThenIndex().schedule();
-        } else {
-          WantedState = wantedState.IDLE;
-        }
         break;
       case SHOOT_ALL:
-        if (!isRunningCommand) {
-          shootSix().schedule();
-        } else {
-          WantedState = wantedState.IDLE;
-        }
         break;
       case IDLE:
         elevation.setWantedState(wantedElevationState.IDLE);
@@ -184,66 +169,6 @@ public class Superstructure extends SubsystemBase {
         barrels.setWantedState(wantedBarrelState.IDLE);
         break;
     }
-  }
-
-  /**
-   * shoots and indexes all 6 barrels of the T-shirt cannon, then ends and sets the state back to
-   * idle
-   *
-   * <p>sets and resets the isRunningCommand boolean automatically
-   *
-   * <p>should end on a redundant index but that shouldnt do any harm
-   *
-   * @return the command to shoot all 6 and then reset state and boolean
-   */
-  public Command shootSix() {
-    isRunningCommand = true; // set isRunningCommand true to not overwhelm the scheduler
-    return new SequentialCommandGroup(
-        shootThenIndex(),
-        shootThenIndex(),
-        shootThenIndex(),
-        shootThenIndex(),
-        shootThenIndex(),
-        shootThenIndex(),
-        new InstantCommand(
-            () ->
-                WantedState =
-                    wantedState.IDLE), // got back to idle so this state can be called again
-        new InstantCommand(() -> isRunningCommand = false)); // reset the boolean
-  }
-
-  /**
-   * shoots then indexes 1 barrel of the T-shirt cannon, then ends and sets the state back to idle
-   * if we just want to shoot 1
-   *
-   * <p>sets and resets the isRunningCommand boolean automatically if we just want to shoot 1
-   *
-   * @return the command to shoot then index and to reset or not
-   */
-  public Command shootThenIndex() {
-    isRunningCommand = true; // set isRunningCommand true to not overwhelm the scheduler
-    return new SequentialCommandGroup(
-        new InstantCommand(
-            () ->
-                pneumatics.setWantedState(
-                    wantedPneumaticsState.SHOOT)), // shoot using the pneumatics state
-        new WaitUntilCommand(
-            () -> !pneumatics.isRunningCommand), // wait until that sequence has finishied
-        new InstantCommand(
-            () -> barrels.setWantedState(wantedBarrelState.INDEX)), // index the barrel
-        new WaitUntilCommand(() -> barrels.isAtAngle), // wait until we are at angle, then move on
-
-        // reset state if not in the SHOOT_ALL state, otherwise, return a null command
-        new ConditionalCommand(
-            new InstantCommand(() -> WantedState = wantedState.IDLE),
-            new InstantCommand(),
-            () -> WantedState != wantedState.SHOOT_ALL),
-
-        // reset boolean if not in the SHOOT_ALL state, otherwise return a null command
-        new ConditionalCommand(
-            new InstantCommand(() -> isRunningCommand = false),
-            new InstantCommand(),
-            () -> WantedState != wantedState.SHOOT_ALL));
   }
 
   /**

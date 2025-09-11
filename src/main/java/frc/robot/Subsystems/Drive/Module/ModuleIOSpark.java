@@ -315,7 +315,6 @@ public class ModuleIOSpark implements ModuleIO {
                 () ->
                     Rotation2d.fromRotations(absoluteEncoder.get())
                         .minus(rotationOffset)
-                        .plus(Rotation2d.kPi)
                         .getRadians());
   }
 
@@ -334,8 +333,7 @@ public class ModuleIOSpark implements ModuleIO {
 
     // update turn motor values, only accepting if no sticky fault present
     SparkUtil.stickyFault = false;
-    inputs.turnPosition =
-        Rotation2d.fromRotations(absoluteEncoder.get()).minus(rotationOffset).plus(Rotation2d.kPi);
+    inputs.turnPosition = Rotation2d.fromRotations(absoluteEncoder.get()).minus(rotationOffset);
     ifOk(
         turnSpark,
         turnSpark.getEncoder()::getVelocity,
@@ -412,10 +410,7 @@ public class ModuleIOSpark implements ModuleIO {
             Constants.DriveConstants.turnPIDMinInput,
             Constants.DriveConstants.turnPIDMaxInput);
     double volts =
-        turnPID.calculate(
-            (Rotation2d.fromRotations(absoluteEncoder.get()).plus(Rotation2d.kPi)).getRadians(),
-            setPoint);
-    System.out.println(volts);
+        turnPID.calculate((Rotation2d.fromRotations(absoluteEncoder.get())).getRadians(), setPoint);
     setTurnOpenLoop(volts);
   }
 

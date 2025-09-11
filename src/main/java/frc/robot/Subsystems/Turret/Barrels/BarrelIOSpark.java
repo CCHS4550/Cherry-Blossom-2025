@@ -174,10 +174,24 @@ public class BarrelIOSpark implements BarrelIO {
   @Override
   public void setBarrelPos(Rotation2d angle, double arbFF) {
     barrelController.setReference(
-        angle.getRadians(),
+        wrapAngle(angle.getRadians()),
         ControlType.kPosition,
         ClosedLoopSlot.kSlot0,
         arbFF,
         ArbFFUnits.kVoltage);
+  }
+
+  public double wrapAngle(double angle) {
+    // Normalize the angle to the range [0, 2*pi)
+    angle = angle % (2 * Math.PI);
+    if (angle < 0) {
+      angle += (2 * Math.PI);
+    }
+
+    // Shift the angle to the range [-pi, pi)
+    if (angle >= Math.PI) {
+      angle -= (2 * Math.PI);
+    }
+    return angle;
   }
 }

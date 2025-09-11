@@ -129,12 +129,14 @@ public class PneumaticsIOHardware implements PneumaticsIO {
   @Override
   public void enablePressureSeal() {
     pressureSeal.set(Value.kForward);
+    System.out.println("enabled");
   }
 
   /** remove seal with the barrel */
   @Override
   public void disablePressureSeal() {
     pressureSeal.set(Value.kReverse);
+    System.out.println("disabled");
   }
 
   /**

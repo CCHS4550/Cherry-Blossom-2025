@@ -3,10 +3,8 @@ package frc.robot.Subsystems.Turret.Pneumatics;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
-import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.StartEndCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import edu.wpi.first.wpilibj2.command.WaitCommand;
 import frc.robot.Constants;
 
 /**
@@ -17,7 +15,7 @@ import frc.robot.Constants;
  */
 public class Pneumatics extends SubsystemBase {
 
-  private final PneumaticsIO
+  public final PneumaticsIO
       io; // the interface used by pnuematics, will be defined as PneumaticsIOHardware if real
 
   private final PneumaticsIOInputsAutoLogged inputs =
@@ -139,9 +137,6 @@ public class Pneumatics extends SubsystemBase {
         }
         break;
       case SHOOT:
-        if (!isRunningCommand) {
-          runShootingSequence().schedule(); // only shoot sequence when the previous one is done
-        }
         break;
       case IDLE:
         break;
@@ -163,30 +158,6 @@ public class Pneumatics extends SubsystemBase {
       case NONE -> null;
       default -> null;
     };
-  }
-
-  /**
-   * the steps necesary to create a seal, shoot, and disable the seal to allow indexing
-   *
-   * <p>also automatically resets the back to idle when false so it can run again also automatically
-   * resets the isRunningCommand variable so that shouldn't be manipulated elsewhat
-   *
-   * @return the squencial command group to follow run
-   */
-  private SequentialCommandGroup runShootingSequence() {
-    isRunningCommand = true; // we are running a command
-    return new SequentialCommandGroup(
-        new InstantCommand(() -> io.enablePressureSeal()), // get the seal
-        new WaitCommand(0.3), // wait to let it happen
-        new StartEndCommand(() -> io.setShootingSeal(true), () -> io.setShootingSeal(false))
-            .withTimeout(0.2), // shoot
-        new WaitCommand(0.01),
-        new InstantCommand(
-            () -> io.disablePressureSeal()), // disable the pressure seal to allow indexing
-        new WaitCommand(0.01),
-        new InstantCommand(() -> isRunningCommand = false), // indicate the command is done
-        new InstantCommand(
-            () -> setWantedState(wantedPneumaticsState.IDLE))); // set our wanted state to idle
   }
 
   /**

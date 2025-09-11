@@ -2,6 +2,7 @@ package frc.robot.ControlSchemes;
 
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
+import frc.robot.MechanismCommands;
 import frc.robot.Subsystems.Superstructure;
 import frc.robot.Subsystems.Superstructure.wantedState;
 
@@ -59,9 +60,7 @@ public class MechanismScheme {
         .onFalse(new InstantCommand(() -> superstructure.setWantedState(wantedState.IDLE)));
 
     // shoot one on right trigger
-    controller
-        .rightTrigger()
-        .onTrue(new InstantCommand(() -> superstructure.setWantedState(wantedState.SHOOT_ONE)));
+    controller.rightTrigger().onTrue(MechanismCommands.shootThenIndex(superstructure));
     // controller
     //     .rightTrigger()
     //     .onTrue(new InstantCommand(() ->

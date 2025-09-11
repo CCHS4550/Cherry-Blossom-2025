@@ -5,15 +5,12 @@ import static edu.wpi.first.units.Units.*;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.config.PIDConstants;
 import com.pathplanner.lib.controllers.PPHolonomicDriveController;
-import com.pathplanner.lib.path.PathConstraints;
 import com.pathplanner.lib.pathfinding.Pathfinding;
 import com.pathplanner.lib.util.PathPlannerLogging;
 import edu.wpi.first.hal.FRCNetComm.tInstances;
 import edu.wpi.first.hal.FRCNetComm.tResourceType;
 import edu.wpi.first.hal.HAL;
 import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.math.Matrix;
-import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
 import edu.wpi.first.math.geometry.Pose2d;
@@ -25,8 +22,6 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
-import edu.wpi.first.math.numbers.N1;
-import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.Alert;
@@ -44,12 +39,10 @@ import frc.robot.Subsystems.Drive.Gyro.GyroIO;
 import frc.robot.Subsystems.Drive.Gyro.GyroIOInputsAutoLogged;
 import frc.robot.Subsystems.Drive.Module.*;
 import frc.robot.Subsystems.Drive.Module.Module;
-import frc.robot.Subsystems.Vision.Vision;
 import frc.robot.Util.LocalADStarAK;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BooleanSupplier;
-import java.util.function.Consumer;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 
@@ -58,7 +51,7 @@ import org.littletonrobotics.junction.Logger;
  * according to input uses a state machine function, so most operations should be able to be called
  * by simply changing the wanted state
  */
-public class Drive extends SubsystemBase implements Vision.VisionConsumer {
+public class Drive extends SubsystemBase {
 
   // java lock to implement thread safe
   static final Lock odometryLock = new ReentrantLock();
@@ -97,26 +90,10 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
   // variable used to track rotation of the robot
   private Rotation2d rawGyroRotation = new Rotation2d();
 
-  // values used for pathfinding to pose
-  private Pose2d pathOntheFlyPose;
-  private PathConstraints pathConstraintsOnTheFly;
-  private double maxTransSpeedMpsOnTheFly = 20.0;
-  private double maxTransAccelMpssqOnTheFly = 30;
-  private double maxRotSpeedRadPerSecOnTheFly = 6;
-  private double maxRotAccelRadPerSecSqOnTheFly = 10;
-  private double idealEndVeloOntheFly = 0;
-
   // values to use during teleop, these will be periodically set during the default command
   private double xJoystickInput = 0.0;
   private double yJoystickInput = 0.0;
   private double omegaJoystickInput = 0.0;
-
-  // angle for teleop drive but the bot is at a fixed angle
-  private Rotation2d joystickDriveAtAngleAngle = Rotation2d.fromRadians(0.0);
-
-  // constraints for drive to point functionality
-  private double maxOptionalTurnVeloRadiansPerSec = Double.NaN;
-  private double maxVelocityOutputForDriveToPoint = Units.feetToMeters(10.0);
 
   /**
    * Pid Controller for drive at angle.
@@ -134,15 +111,6 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
               Constants.DriveConstants.ANGLE_MAX_VELOCITY,
               Constants.DriveConstants.ANGLE_MAX_ACCELERATION));
 
-  // pid controllers for drive to point, not fully tested so unsure if seperation of auto and teleop
-  // is needed, but lower auto values also mean slower more accurate pid
-  private final PIDController autoDriveToPointController = new PIDController(0.3, 0, 0.1);
-  private final PIDController teleopDriveToPointController = new PIDController(0.69, 0, 0.1);
-  private Pose2d driveToPointPose = new Pose2d(); // pose to drive to
-
-  // acceptable margin of error when going to a posse
-  private static final double goToPoseTranslationError = Units.inchesToMeters(1);
-
   // potential bad practice
   // mainly used in path on the fly, nothing else uses command scheduler
   private boolean isRunningCommand =
@@ -153,18 +121,10 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
           false; // we can enable should cancel early anytime we want to stop a command from running
   // state we want drive train to be in
 
-  // used for drive simulation
-  // wont be used unless for sim
-  @SuppressWarnings("unused")
-  private final Consumer<Pose2d> resetSimulationPoseCallBack;
-
   public enum WantedState {
     SYS_ID,
     AUTO,
     TELEOP_DRIVE,
-    TELEOP_DRIVE_AT_ANGLE,
-    PATH_ON_THE_FLY,
-    DRIVE_TO_POINT,
     IDLE
   }
 
@@ -173,9 +133,6 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
     SYS_ID,
     AUTO,
     TELEOP_DRIVE,
-    TELEOP_DRIVE_AT_ANGLE,
-    PATH_ON_THE_FLY,
-    DRIVE_TO_POINT,
     IDLE
   }
 
@@ -226,12 +183,10 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
       ModuleIO flModuleIO,
       ModuleIO frModuleIO,
       ModuleIO blModuleIO,
-      ModuleIO brModuleIO,
-      Consumer<Pose2d> resetSimulationPoseCallBack) {
+      ModuleIO brModuleIO) {
 
     // initialize the gyro and modules and sim
     this.gyroIO = gyroIO;
-    this.resetSimulationPoseCallBack = resetSimulationPoseCallBack;
     modules[0] = new Module(flModuleIO, 0);
     modules[1] = new Module(frModuleIO, 1);
     modules[2] = new Module(blModuleIO, 2);
@@ -260,9 +215,7 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
         () -> DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red,
         this);
 
-    setPathConstraintsOnTheFly();
     // make sure our angle controller wraps angles properly
-    angleController.enableContinuousInput(-Math.PI, Math.PI);
 
     // use our logged AD* algorithm as the pathfinder
     Pathfinding.setPathfinder(new LocalADStarAK());
@@ -290,25 +243,24 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
                 (voltage) -> runCharacterization(voltage.in(Volts)), null, this));
     Logger.recordOutput("testing/adjust", testPose);
     Logger.recordOutput("testing/og", testPoseOG);
-
-    setDriveToPointPose(new Pose2d(3, 3, new Rotation2d()));
-    setPathOntheFlyPose(new Pose2d(3, 3, new Rotation2d()));
   }
 
   @Override
   public void periodic() {
     // lock the thread for thread safe
     odometryLock.lock();
+    try {
+      // update and log gyro inputs
+      gyroIO.updateInputs(gyroInputs);
+      Logger.processInputs("Drive/Gyro", gyroInputs);
 
-    // update and log gyro inputs
-    gyroIO.updateInputs(gyroInputs);
-    Logger.processInputs("Drive/Gyro", gyroInputs);
-
-    // run modules periodic method
-    for (var module : modules) {
-      module.periodic();
+      // run modules periodic method
+      for (var module : modules) {
+        module.periodic();
+      }
+    } finally {
+      odometryLock.unlock();
     }
-    odometryLock.unlock();
 
     // stop if disabled
     if (DriverStation.isDisabled()) {
@@ -372,37 +324,15 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
     Logger.recordOutput("Subsystems/Drive/SystemState", systemState);
     Logger.recordOutput("Subsystems/Drive/DesiredState", wantedState);
 
-    /*
-     as long as isRunningCommand is true, PATH_ON_THE_FLY will not be able to be set as the system state, in order to avoid initializing the command multiple times
-
-     cancelIfNearAndReturnFalse checks 3 conditions, if the robot is at the desired pose, what the state is, and if we are in auto
-
-     1. If the state is anything but DRIVE_TO_POINT or PATH_ON_THE_FLY, cancelIfNear will return false, allowing us to set PATH_ON_THE_FLY whenever we want.
-
-     2. If the state is DRIVE_TO_POINT, the boolean is unimportant, as that state does not call the command scheduler, however it does automatically switch us back over
-        to either telop or auto when we are there. NOTE: the boolean value returned here can likely be used as the end condition if this this is called as a command in auto
-
-     3. If the state is PATH_ON_THE_FLY, when we are at our desired pose, the state is switched to teleop and the boolean is switched false, allowing us to finally call it again
-        If the pathfindToPose command is canceled early by the shouldCancelEarly boolean supplier, this will return false because the state is switched to teleop, which automatically returns false,
-        allowing us to then call the command again if we so wish
-    */
-    isRunningCommand = cancelIfNearAndReturnFalse();
-
     // turn the states into desired output
     applyStates();
 
-    // for (int i = 0; i < 4; i++) {
+    // for (int i = 0; i < 3; i++) {
     //   modules[i].runCharacterization(10);
     // }
 
     Robotstate.getInstance().updateBotPoseAndSpeeds(getPose(), getChassisSpeeds());
     Robotstate.getInstance().updateRawGyroVelo(gyroInputs.yawVelocityRadPerSec);
-
-    Logger.recordOutput("Subsystems/Drive/ pathOntheFlyGoal", pathOntheFlyPose);
-    Logger.recordOutput("Subsystems/Drive/DriveDesiredPoint", driveToPointPose);
-
-    Logger.recordOutput("Subsystems/Drive/ isRunningCommand", isRunningCommand);
-    Logger.recordOutput("Subsystems/Drive/ early cancel", shouldCancelEarly.getAsBoolean());
   }
 
   /**
@@ -412,28 +342,11 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
    * @return the systemstate that our systemState variable will be set to
    */
   private SystemState handleStateTransition() {
-    // if we cancel early, set the state to teleop to keep us from being stuck in an idle state and
-    // reset the boolean to true
-    // this should only apply if the wanted state is also PATH_ON_THE_FLY so we arent stuck in a
-    // cycle of setting to teleop b/c the boolean is true(which it always is when not in path on the
-    // fly)
-    // wanted state stays PATH_ON_THE_FLY b/c despite the system state being set to something
-    // different, the wanted state is never set to anything else until a condition
-    if (shouldCancelEarly.getAsBoolean() && wantedState == WantedState.PATH_ON_THE_FLY) {
-      setWantedState(WantedState.TELEOP_DRIVE);
-    }
-
-    if (wantedState != WantedState.DRIVE_TO_POINT && wantedState != WantedState.PATH_ON_THE_FLY) {
-      setEarlyCancel(true);
-    }
 
     return switch (wantedState) {
       case SYS_ID -> SystemState.SYS_ID;
       case AUTO -> SystemState.AUTO;
       case TELEOP_DRIVE -> SystemState.TELEOP_DRIVE;
-      case TELEOP_DRIVE_AT_ANGLE -> SystemState.TELEOP_DRIVE_AT_ANGLE;
-      case PATH_ON_THE_FLY -> SystemState.PATH_ON_THE_FLY;
-      case DRIVE_TO_POINT -> SystemState.DRIVE_TO_POINT;
       default -> SystemState.IDLE;
     };
   }
@@ -457,25 +370,7 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
         // calculates speeds
         // runs velocity
         break;
-      case TELEOP_DRIVE_AT_ANGLE:
-        driveAtAngle(xJoystickInput, yJoystickInput, joystickDriveAtAngleAngle);
-        // calculates speeds and angle
-        // runs velocity
-        break;
-      case PATH_ON_THE_FLY:
-        // simply calls autobuilders built in command
-        // not the most accurate, should only be used for larger movements
-        // only run if not already running a path on the fly
-        setPathConstraintsOnTheFly();
-        if (!isRunningCommand) {
-          isRunningCommand = true;
-        }
-        break;
-      case DRIVE_TO_POINT:
-        // calculates needed velo to get to state
-        // gives those speeds to driveAtAngle method which then calculates the rotational component
-        // runs velocity
-        driveToPoint();
+      case IDLE:
         break;
     }
   }
@@ -513,7 +408,7 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
     // set all modules to our found states. Note that we still have to optomize our wheel angle for
     // better wraparound
     // set to 3 to ignore the broken swerve module? fix once fixed
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 4; i++) {
       modules[i].runSwerveState(setPointStates[i]);
     }
 
@@ -584,11 +479,12 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
 
     // convert the 2 seperate x & y inputs into an overall translation 2d of 1 linear speed, just
     // found as the hypotenuse of the x & y
-    Translation2d linearVelocity =
-        getLinearVelocityFromXY(xInput, yInput, Constants.DriveConstants.deadband);
+    // Translation2d linearVelocity =
+    // getLinearVelocityFromXY(xInput, yInput, Constants.DriveConstants.deadband);
 
     // Apply rotation deadband
     double omega = MathUtil.applyDeadband(omegaInput, Constants.DriveConstants.deadband);
+    // double omega = 0;
 
     // Square rotation value for more precise control
     omega = Math.copySign(omega * omega, omega);
@@ -596,261 +492,19 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
     // Convert to field relative speeds
     ChassisSpeeds speeds =
         new ChassisSpeeds(
-            linearVelocity.getX() * getMaxLinearSpeed(),
-            linearVelocity.getY() * getMaxLinearSpeed(),
+            xInput * getMaxLinearSpeed(),
+            yInput * getMaxLinearSpeed(),
             omega * getMaxAngularSpeed());
-    boolean isFlipped =
-        DriverStation.getAlliance().isPresent()
-            && DriverStation.getAlliance().get() == Alliance.Red;
+    // boolean isFlipped =
+    // DriverStation.getAlliance().isPresent()
+    //     && DriverStation.getAlliance().get() == Alliance.Red;
 
     // set the bot to run at the chassis speeds
     runVelocity(
-        ChassisSpeeds.fromFieldRelativeSpeeds(
-            speeds, isFlipped ? getRotation().plus(new Rotation2d(Math.PI)) : getRotation()));
-  }
-  /**
-   * sets the bot to drive at any given x & y input, but stays at a given angle can be called with
-   * joysticks providing the x and y speeds or an external pid loop note that when called with
-   * joysticks, an another overload shouldve been made to apply dead band everything should be field
-   * relative
-   *
-   * @param xInput horizontal speed of the bot
-   * @param yInput vertical speed of the bot
-   * @param angle desired angle to lock at
-   */
-  public void driveAtAngle(double xInput, double yInput, Rotation2d angle) {
-
-    System.out.println("running angle");
-    // convert the 2 seperate x & y inputs into an overall translation 2d of 1 linear speed, just
-    // found as the hypotenuse of the x & y
-    Translation2d linearVelocity = getLinearVelocityFromXY(xInput, yInput);
-
-    // calculate the angle with our profiled pid controller
-    double omega = angleController.calculate(getRotation().getRadians(), angle.getRadians());
-
-    Logger.recordOutput("Subsystems/Drive/ angle pid", omega);
-    Logger.recordOutput("Subsystems/Drive/ angle", angle);
-    // convert to field relative speeds
-    ChassisSpeeds speeds =
-        new ChassisSpeeds(
-            linearVelocity.getX() * getMaxLinearSpeed(),
-            linearVelocity.getY() * getMaxLinearSpeed(),
-            omega);
-    boolean isFlipped =
-        DriverStation.getAlliance().isPresent()
-            && DriverStation.getAlliance().get() == Alliance.Red;
-
-    // set the bot to run at the chassis speeds
-    runVelocity(
-        ChassisSpeeds.fromFieldRelativeSpeeds(
-            speeds, isFlipped ? getRotation().plus(new Rotation2d(Math.PI)) : getRotation()));
-  }
-
-  /**
-   * this is the same as the other drive at angle method, but with an inbuilt max turn speed sets
-   * the bot to drive at any given x & y input, but stays at a given angle can be called with
-   * joysticks providing the x and y speeds or an external pid loop note that when called with
-   * joysticks, an another overload shouldve been made to apply dead band everything should be field
-   * relative
-   *
-   * @param xInput horizontal speed of the bot
-   * @param yInput vertical speed of the bot
-   * @param angle desired angle to lock at
-   * @param maxTurnVelo the max omega speed of the bot, in radians per second
-   */
-  public void driveAtAngle(double xInput, double yInput, Rotation2d angle, double maxTurnVelo) {
-    // convert the 2 seperate x & y inputs into an overall translation 2d of 1 linear speed, just
-    // found as the hypotenuse of the x & y
-    Translation2d linearVelocity = getLinearVelocityFromXY(xInput, yInput);
-
-    // calculate the angle with our profiled pid controller
-    double omega = angleController.calculate(getRotation().getRadians(), angle.getRadians());
-
-    // convert to field relative speeds
-    ChassisSpeeds speeds =
-        new ChassisSpeeds(
-            linearVelocity.getX() * getMaxLinearSpeed(),
-            linearVelocity.getY() * getMaxLinearSpeed(),
-            omega);
-    boolean isFlipped =
-        DriverStation.getAlliance().isPresent()
-            && DriverStation.getAlliance().get() == Alliance.Red;
-
-    // set the bot to the chassis speeds, but use the turn limited method
-    runVelocityWithMaxTurnVelo(
-        ChassisSpeeds.fromFieldRelativeSpeeds(
-            speeds, isFlipped ? getRotation().plus(new Rotation2d(Math.PI)) : getRotation()),
-        maxTurnVelo);
-  }
-
-  /**
-   * This sets the bot to drive straight to a desired pose It does this by calculating our needed
-   * velocities to get there, then applying that to drive at angle
-   */
-  public void driveToPoint() {
-
-    // difference between our desired pose and our current one
-    var translationToDesiredPoint =
-        driveToPointPose.getTranslation().minus(getPose().getTranslation());
-    var linearDistance = translationToDesiredPoint.getNorm();
-
-    // if we are a certain distance away from the target, calculate and later add additional speed
-    // to counteract static friction
-    // this method was largely copied from jack in the bot, and I am unsure why they dont do an
-    // entire feed forward calc here
-    // my best bet is because this isn't actually finding the voltage to set a motor to, but rather
-    // the overall speed of the bot,
-    // feed forward isn't applicable here, as that calculates the voltages necesary to get to a
-    // speed, instead the static friction is
-    // multiplied by max speed, in essence setting the bot to a slightly higher speed to beat
-    // friction. If feed forward were to be applied,
-    // then that would likely return too high a value, as we only want a small nudge
-    var frictionConstant = 0.0;
-    if (linearDistance >= Units.inchesToMeters(0.5)) {
-      frictionConstant =
-          Constants.DriveConstants.driveToPointStaticFrictionConstant
-              * Constants.DriveConstants.maxSpeedMetersPerSec;
-    }
-
-    // the direction our linear speed needs to go
-    var directionOfTravel = translationToDesiredPoint.getAngle();
-
-    // calculate our needed velo
-    var velocityOutput = 0.0;
-    if (DriverStation.isAutonomous()) {
-      velocityOutput =
-          Math.min(
-              Math.abs(autoDriveToPointController.calculate(linearDistance, 0)) + frictionConstant,
-              maxVelocityOutputForDriveToPoint);
-      // breaking down the math:
-      // the current state of the pid is set to the distance from the wanted state
-      // the desired output is a distance of 0
-      // so literally we are calculating the output necesary to get our distance to 0 + friction
-      // constant
-      // this is an absolute value because we only care about speed right now, not direction
-
-      // this is then compared to the maximum allowed velocity and if it is higher, the speed will
-      // simply be set to the maximum velocity, otherwise
-      // it will be set the the calculated speed
-    } else {
-      velocityOutput =
-          Math.min(
-              Math.abs(teleopDriveToPointController.calculate(linearDistance, 0))
-                  + frictionConstant,
-              maxVelocityOutputForDriveToPoint);
-      // breaking down the math:
-      // the current state of the pid is set to the distance from the wanted state
-      // the desired output is a distance of 0
-      // so literally we are calculating the output necesary to get our distance to 0 + friction
-      // constant
-      // this is an absolute value because we only care about speed right now, not direction
-
-      // this is then compared to the maximum allowed velocity and if it is higher, the speed will
-      // simply be set to the maximum velocity, otherwise
-      // it will be set the the calculated speed
-    }
-
-    // give our speeds field a direction and break it down into x and y pieces
-    var xComponent = velocityOutput * directionOfTravel.getCos();
-    var yComponent = velocityOutput * directionOfTravel.getSin();
-
-    // logging
-    Logger.recordOutput("Subsystems/Drive/DriveToPoint/xVelocitySetpoint", xComponent);
-    Logger.recordOutput("Subsystems/Drive/DriveToPoint/yVelocitySetpoint", yComponent);
-    Logger.recordOutput("Subsystems/Drive/DriveToPoint/velocityOutput", velocityOutput);
-    Logger.recordOutput("Subsystems/Drive/DriveToPoint/linearDistance", linearDistance);
-    Logger.recordOutput("Subsystems/Drive/DriveToPoint/directionOfTravel", directionOfTravel);
-
-    // if a max turn speed has been set, use the turn limited drive the angle, otherwise use the
-    // standard drive to angle
-    if (Double.isNaN(maxOptionalTurnVeloRadiansPerSec)) {
-      driveAtAngle(xComponent, yComponent, driveToPointPose.getRotation());
-    } else {
-      driveAtAngle(
-          xComponent, yComponent, driveToPointPose.getRotation(), maxOptionalTurnVeloRadiansPerSec);
-    }
-  }
-
-  public Command pathOnTheFlyCommand() {
-    return AutoBuilder.pathfindToPose(
-            pathOntheFlyPose, pathConstraintsOnTheFly, idealEndVeloOntheFly)
-        .until(shouldCancelEarly)
-        .finallyDo(() -> isRunningCommand = false); // make sure we clear the flag
-  }
-
-  /**
-   * cancelIfNearAndReturnFalse checks 3 conditions, if the robot is at the desired pose, what the
-   * state is, and if we are in auto
-   *
-   * <p>1. If the state is anything but DRIVE_TO_POINT or PATH_ON_THE_FLY, cancelIfNear will return
-   * false, allowing us to set PATH_ON_THE_FLY whenever we want.
-   *
-   * <p>2. If the state is DRIVE_TO_POINT, the boolean is unimportant, as that state does not call
-   * the command scheduler, however it does automatically switch us back over to either telop or
-   * auto when we are there. NOTE: the boolean value returned here can likely be used as the end
-   * condition if this this is called as a command in auto
-   *
-   * <p>3. If the state is PATH_ON_THE_FLY, when we are at our desired pose, the state is switched
-   * to teleop and the boolean is switched false, allowing us to finally call it again If the
-   * pathfindToPose command is canceled early by the shouldCancelEarly boolean supplier, this will
-   * return false because the state is switched to teleop, which automatically returns false,
-   * allowing us to then call the command again if we so wish
-   *
-   * @return if we are in PATH_ON_THE_FLY or DRIVE_TO_POINT, and if we have gotten to the desired
-   *     pose
-   */
-  public boolean cancelIfNearAndReturnFalse() {
-    if ((systemState == SystemState.PATH_ON_THE_FLY && !DriverStation.isAutonomous())) {
-      // distance to desired pose
-      var distance = pathOntheFlyPose.getTranslation().minus(getPose().getTranslation()).getNorm();
-
-      // logging
-      Logger.recordOutput("Subsystems/Drive/PathOnFlyTeleOp/distanceFromEndpoint", distance);
-
-      // checks if at the pose, comparing 0 to our distance, because we want our distance to be 0
-      // increased allowance of error because path on the fly is less accurate than drive to point
-      if (MathUtil.isNear(0.0, distance, goToPoseTranslationError * 3)) {
-        setWantedState(
-            WantedState.TELEOP_DRIVE); // go back to teleop, will also resest early cancel
-        return false;
-      } else {
-        return true;
-      }
-    } else if ((systemState == SystemState.DRIVE_TO_POINT && !DriverStation.isAutonomous())) {
-      // distance to desire pose
-      var distance = driveToPointPose.getTranslation().minus(getPose().getTranslation()).getNorm();
-
-      // logging
-      Logger.recordOutput("Subsystems/Drive/DriveToPointTeleOp/distanceFromEndpoint", distance);
-
-      // checks if at pose, comparing 0 to our distance, because we want our distance to be 0
-      if (MathUtil.isNear(0.0, distance, goToPoseTranslationError)) {
-        setWantedState(WantedState.TELEOP_DRIVE); // go back to teleop, will also reset early cancel
-        return false;
-      } else {
-        return true;
-      }
-    } else if ((systemState == SystemState.DRIVE_TO_POINT && DriverStation.isAutonomous())) {
-      var distance = driveToPointPose.getTranslation().minus(getPose().getTranslation()).getNorm();
-
-      Logger.recordOutput("Subsystems/Drive/DriveToPointAuto/distanceFromEndpoint", distance);
-
-      if (MathUtil.isNear(0.0, distance, goToPoseTranslationError)) {
-        setWantedState(
-            WantedState
-                .AUTO); // go back to auto so new tasks can be performed, will also reset early
-        // cancel
-        return false;
-      } else {
-        return true;
-      }
-    } else if (systemState != SystemState.PATH_ON_THE_FLY) {
-      return false; // if we are not in PATH_ON_THE_FLY, then we must not be running a command for
-      // swerve drive
-    } else {
-      return true; // if all other conditions don't apply, then we are in the middle of a
-      // pathfinding command, so return true
-    }
+        // ChassisSpeeds.fromFieldRelativeSpeeds(
+        speeds
+        // , isFlipped ? getRotation().plus(new Rotation2d(Math.PI)) : getRotation())
+        );
   }
 
   // this exists just to prevent too many states or apply states from being crowded
@@ -1012,7 +666,7 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
    */
   private SwerveModulePosition[] getModulePositions() {
     SwerveModulePosition[] states = new SwerveModulePosition[4];
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < 3; i++) { // only return 3 modules because I think one failed
       states[i] = modules[i].getPosition();
     }
     return states;
@@ -1110,16 +764,6 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
    * @param wantedState the desired state
    */
   public void setWantedState(WantedState wantedState) {
-
-    // reset the command canceller when setting the state to path on the fly and cancel the command
-    // when not
-    // important note: this should be called on all ways of ending PATH_ON_THE_FLY to ensure that
-    // the early cancel boolean is properly set
-    if (wantedState == WantedState.PATH_ON_THE_FLY) {
-      setEarlyCancel(false);
-    } else {
-      setEarlyCancel(true);
-    }
     this.wantedState = wantedState;
   }
 
@@ -1148,116 +792,5 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
    */
   public void setOmegaJoystickInput(double omega) {
     omegaJoystickInput = omega;
-  }
-
-  /**
-   * sets if we want to limit the turn speed for drive at angle
-   *
-   * @param speed the max speed in radians per second
-   */
-  public void setMaxOptionalTurnVeloRadiansPerSec(double speed) {
-    maxOptionalTurnVeloRadiansPerSec = speed;
-  }
-
-  /**
-   * sets our angle for teleop driving with a locked angle
-   *
-   * @param radians the desired angle to lock to
-   */
-  public void setAngleLockAngle(Rotation2d radians) {
-    joystickDriveAtAngleAngle = radians;
-  }
-
-  /**
-   * sets pose for drive to point
-   *
-   * @param pose the desired pose to drive to
-   */
-  public void setDriveToPointPose(Pose2d pose) {
-    driveToPointPose = pose;
-  }
-
-  /**
-   * sets pose for path on the fly
-   *
-   * @param pose the desired pose to drive to
-   */
-  public void setPathOntheFlyPose(Pose2d pose) {
-    pathOntheFlyPose = pose;
-  }
-
-  /**
-   * sets the max xy speed during path on the fly
-   *
-   * @param speed the max speed in meters per second
-   */
-  public void setMaxTransSpeedOnTheFly(double speed) {
-    maxTransSpeedMpsOnTheFly = speed;
-  }
-
-  /**
-   * sets the max xy acceleration during path on the fly
-   *
-   * @param speed the max acceleration in meters per second^2
-   */
-  public void setMaxTransAccelOnTheFly(double speed) {
-    maxTransAccelMpssqOnTheFly = speed;
-  }
-
-  /**
-   * sets the max rotational speed during path on the fly
-   *
-   * @param speed the max speed in meters per second^2
-   */
-  public void setMaxRotSpeedOnTheFly(double speed) {
-    maxRotSpeedRadPerSecOnTheFly = speed;
-  }
-
-  /**
-   * sets the max rotational acceleration during path on the fly
-   *
-   * @param speed the max acceleration in radians per second^2
-   */
-  public void setMaxRotAccelOnTheFly(double speed) {
-    maxRotAccelRadPerSecSqOnTheFly = speed;
-  }
-
-  /**
-   * set the what speed we want to end path on the fly at generally 0 to stop at the end of the
-   * path, but could be higher to chain to another path/drive to point
-   *
-   * @param speed the desired speed in meters per second
-   */
-  public void setIdealEndVeloOntheFly(double speed) {
-    idealEndVeloOntheFly = speed;
-  }
-
-  /** sets the path constraints for path on the fly */
-  public void setPathConstraintsOnTheFly() {
-    pathConstraintsOnTheFly =
-        new PathConstraints(
-            maxTransSpeedMpsOnTheFly,
-            maxTransAccelMpssqOnTheFly,
-            maxRotSpeedRadPerSecOnTheFly,
-            maxRotAccelRadPerSecSqOnTheFly);
-  }
-
-  /**
-   * sets if the running command (currently just path on the fly) should end early or not
-   *
-   * @param should if the command should end early, true is to end
-   */
-  public void setEarlyCancel(boolean should) {
-    shouldCancelEarly = () -> should;
-  }
-
-  /** Adds a new timestamped vision measurement. */
-  @Override
-  public void accept(
-      Pose2d visionRobotPoseMeters,
-      double timestampSeconds,
-      Matrix<N3, N1> visionMeasurementStdDevs) {
-    poseEstimator.addVisionMeasurement(
-        visionRobotPoseMeters, timestampSeconds, visionMeasurementStdDevs);
   }
 }
