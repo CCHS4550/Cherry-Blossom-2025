@@ -75,5 +75,9 @@ public class MechanismScheme {
         .rightTrigger()
         .and(controller.leftTrigger())
         .onTrue(new InstantCommand(() -> superstructure.setWantedState(wantedState.SHOOT_ALL)));
+
+    controller
+        .rightBumper()
+        .onTrue(new InstantCommand (()-> superstructure.setWantedState(wantedState.FILLING_AIR)));
   }
 }
