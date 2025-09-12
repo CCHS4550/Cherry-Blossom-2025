@@ -60,8 +60,8 @@ public class DriveScheme {
   private static void configureButtons(CommandXboxController controller, Drive drive) {
 
     // slow mode and fast mode
-    controller.rightBumper().onTrue(Commands.runOnce(() -> setFastMode()));
-    controller.rightBumper().onFalse(Commands.runOnce(() -> setSlowMode()));
+    // controller.rightBumper().onTrue(Commands.runOnce(() -> setFastMode()));
+    // controller.rightBumper().onFalse(Commands.runOnce(() -> setSlowMode()));
 
     // drive to point while button is held
     // controller
