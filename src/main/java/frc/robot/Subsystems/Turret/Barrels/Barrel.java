@@ -181,7 +181,8 @@ public class Barrel extends SubsystemBase {
   public void nextAngle() {
 
     // add 60  degrees
-    Rotation2d angle = barrelAngle.plus(Rotation2d.fromDegrees(60));
+    Rotation2d angle =
+        barrelAngle.plus(Rotation2d.fromDegrees(60).minus(Rotation2d.fromRadians(0.005)));
 
     // set the trapezoids goal and the pids goal to the new angle
     goal = new State(angle.getRadians(), 0);

@@ -230,10 +230,10 @@ public final class Constants {
   }
 
   public final class PneumaticConstants {
-    public static final int compressorCanID = 14;
+    public static final int compressorCanID = 5;
     public static final boolean compressorInverted = false;
 
-    public static final int compressorFanPort = 5;
+    public static final int compressorFanPort = 14;
 
     public static final int pressureSealForward = 9;
     public static final int pressureSealBackward = 10;
@@ -316,7 +316,7 @@ public final class Constants {
       public static final double barrelEncoderVeloFactor = ((2 * Math.PI) * (1 / 35.166) * 0.0166);
 
       // feedback loop
-      public static final double barrelKp = 15;
+      public static final double barrelKp = 18;
       public static final double barrelKi = .25;
       public static final double barrelKd = .7;
 

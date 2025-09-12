@@ -13,7 +13,6 @@
 
 package frc.robot;
 
-import com.pathplanner.lib.commands.PathfindingCommand;
 import edu.wpi.first.hal.AllianceStationID;
 import edu.wpi.first.wpilibj.simulation.DriverStationSim;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -83,8 +82,6 @@ public class Robot extends LoggedRobot {
     Logger.start();
 
     robotContainer = new RobotContainer();
-
-    PathfindingCommand.warmupCommand().schedule();
   }
 
   /** This function is called periodically during all modes. */

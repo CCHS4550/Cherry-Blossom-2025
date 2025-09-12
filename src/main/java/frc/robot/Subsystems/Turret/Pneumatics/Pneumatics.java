@@ -178,4 +178,8 @@ public class Pneumatics extends SubsystemBase {
   public void setDesiredPressure(double PSI) {
     desiredPSI = PSI;
   }
+
+  public double getPSI() {
+    return inputs.pressurePSI;
+  }
 }
