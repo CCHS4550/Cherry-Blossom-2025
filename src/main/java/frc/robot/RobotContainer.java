@@ -1,7 +1,5 @@
 package frc.robot;
 
-import static frc.robot.Constants.VisionConstants.*;
-
 import com.pathplanner.lib.auto.AutoBuilder;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
@@ -12,6 +10,7 @@ import frc.robot.Subsystems.Drive.Gyro.GyroIO;
 import frc.robot.Subsystems.Drive.Gyro.GyroIONavX;
 import frc.robot.Subsystems.Drive.Module.ModuleIO;
 import frc.robot.Subsystems.Drive.Module.ModuleIOSpark;
+import frc.robot.Subsystems.Lights;
 import frc.robot.Subsystems.Superstructure;
 import frc.robot.Subsystems.Turret.Barrels.Barrel;
 import frc.robot.Subsystems.Turret.Barrels.BarrelIO;
@@ -36,6 +35,8 @@ public class RobotContainer {
   private final Elevation elevation;
   private final Pneumatics pneumatics;
   private final Rotation rotation;
+  public final Lights lights;
+  
 
   // superstructure
   private final Superstructure superstructure;
@@ -61,7 +62,7 @@ public class RobotContainer {
         elevation = new Elevation(new ElevationIOSpark());
         pneumatics = new Pneumatics(new PneumaticsIOHardware() {});
         rotation = new Rotation(new RotationIOSpark());
-
+        lights = new Lights(pneumatics);
         // create the super structure
         superstructure = new Superstructure(pneumatics, barrels, elevation, rotation, drive);
 
@@ -86,6 +87,7 @@ public class RobotContainer {
         elevation = new Elevation(new ElevationIO() {});
         pneumatics = new Pneumatics(new PneumaticsIO() {});
         rotation = new Rotation(new RotationIOTest() {});
+        lights = new Lights(pneumatics);
 
         superstructure = new Superstructure(pneumatics, barrels, elevation, rotation, drive);
 
@@ -106,7 +108,7 @@ public class RobotContainer {
         elevation = new Elevation(new ElevationIO() {});
         pneumatics = new Pneumatics(new PneumaticsIO() {});
         rotation = new Rotation(new RotationIO() {});
-
+        lights = new Lights(pneumatics);
         superstructure = new Superstructure(pneumatics, barrels, elevation, rotation, drive);
         break;
     }

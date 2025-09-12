@@ -132,11 +132,11 @@ public class Superstructure extends SubsystemBase {
   public void applyStates() {
     switch (SystemState) {
       case ELEVATION_OPENLOOP_UP:
-        elevation.setManualVoltage(3);
+        elevation.setManualVoltage(1.5);
         elevation.setWantedState(wantedElevationState.MANUAL);
         break;
       case ELEVATION_OPENLOOP_DOWN:
-        elevation.setManualVoltage(-3);
+        elevation.setManualVoltage(-1.5);
         elevation.setWantedState(wantedElevationState.MANUAL);
         break;
       case ROTATION_OPENLOOP_CLOCKWISE:
