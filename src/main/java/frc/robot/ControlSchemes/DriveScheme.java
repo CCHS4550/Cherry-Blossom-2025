@@ -125,11 +125,11 @@ public class DriveScheme {
     //   }
 
     //   // setters for fast and slow mode
-    //   public static void setFastMode() {
-    //     driveSpeedModifier = () -> 1.0;
-    //   }
+      public static void setFastMode() {
+        driveSpeedModifier = () -> 0.6;
+      }
 
-    //   public static void setSlowMode() {
-    //     driveSpeedModifier = () -> 1.0;
+      public static void setSlowMode() {
+        driveSpeedModifier = () -> 0.2;
   }
 }
