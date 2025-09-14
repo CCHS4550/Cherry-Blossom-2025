@@ -13,9 +13,12 @@
 
 package frc.robot;
 
-import com.pathplanner.lib.commands.PathfindingCommand;
+import edu.wpi.first.hal.AllianceStationID;
+import edu.wpi.first.wpilibj.simulation.DriverStationSim;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import frc.robot.Subsystems.Lights.LEDState;
+
 import org.littletonrobotics.junction.LogFileUtil;
 import org.littletonrobotics.junction.LoggedRobot;
 import org.littletonrobotics.junction.Logger;
@@ -81,8 +84,6 @@ public class Robot extends LoggedRobot {
     Logger.start();
 
     robotContainer = new RobotContainer();
-
-    PathfindingCommand.warmupCommand().schedule();
   }
 
   /** This function is called periodically during all modes. */
@@ -93,7 +94,9 @@ public class Robot extends LoggedRobot {
 
   /** This function is called once when the robot is disabled. */
   @Override
-  public void disabledInit() {}
+  public void disabledInit() {
+    DriverStationSim.setAllianceStationId(AllianceStationID.Blue1);
+  }
 
   /** This function is called periodically when disabled. */
   @Override
@@ -120,6 +123,10 @@ public class Robot extends LoggedRobot {
     if (autonomousCommand != null) {
       autonomousCommand.cancel();
     }
+    robotContainer
+        .lights
+        .multipleLightCommands(LEDState.pinkWhiteGradient, LEDState.pressureRedtoGreenGradient)
+        .schedule();
   }
 
   /** This function is called periodically during operator control. */
@@ -138,9 +145,13 @@ public class Robot extends LoggedRobot {
 
   /** This function is called once when the robot is first started up. */
   @Override
-  public void simulationInit() {}
+  public void simulationInit() {
+    DriverStationSim.setAllianceStationId(AllianceStationID.Blue1);
+  }
 
   /** This function is called periodically whilst in simulation. */
   @Override
-  public void simulationPeriodic() {}
+  public void simulationPeriodic() {
+    DriverStationSim.setAllianceStationId(AllianceStationID.Blue1);
+  }
 }

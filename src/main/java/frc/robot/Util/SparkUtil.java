@@ -1,11 +1,15 @@
 package frc.robot.Util;
 
+import static edu.wpi.first.units.Units.Seconds;
+
 import com.revrobotics.REVLibError;
 import com.revrobotics.spark.SparkBase;
+import edu.wpi.first.wpilibj.Timer;
 import java.util.function.Consumer;
 import java.util.function.DoubleConsumer;
 import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;
+import org.ironmaple.simulation.SimulatedArena;
 
 public class SparkUtil {
   // allows us to see if the sparkmax has had an error in the past
@@ -36,6 +40,7 @@ public class SparkUtil {
     doubleConsumers.accept(nums);
   }
 
+  // returns if a spark max has had an error
   public static boolean isOK(SparkBase spark) {
     boolean isFine = true;
     if (spark.getLastError() != REVLibError.kOk) {
@@ -44,6 +49,7 @@ public class SparkUtil {
     return isFine;
   }
 
+  // returns if a generic spark object has had an error
   public static boolean isOK(SparkBase[] spark) {
     boolean isFine = true;
     for (int i = 0; i < spark.length; i++) {
@@ -55,6 +61,7 @@ public class SparkUtil {
     return isFine;
   }
 
+  // repeatedly calls a command until there is no error in running it
   public static void makeItWork(SparkBase spark, int maxAttempts, Supplier<REVLibError> command) {
     for (int i = 0; i < maxAttempts; i++) {
       var error = command.get();
@@ -64,5 +71,16 @@ public class SparkUtil {
         stickyFault = true;
       }
     }
+  }
+
+  // returns an array of timestamps for simulation to use
+  public static double[] getSimulationOdometryTimeStamps() {
+    final double[] odometryTimeStamps = new double[SimulatedArena.getSimulationSubTicksIn1Period()];
+    for (int i = 0; i < odometryTimeStamps.length; i++) {
+      odometryTimeStamps[i] =
+          Timer.getFPGATimestamp() - 0.02 + i * SimulatedArena.getSimulationDt().in(Seconds);
+    }
+
+    return odometryTimeStamps;
   }
 }
