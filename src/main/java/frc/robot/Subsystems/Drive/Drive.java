@@ -592,6 +592,10 @@ public class Drive extends SubsystemBase {
     }
   }
 
+  public void resetZero(){
+    gyroIO.reset();
+  }
+
   /** stops the bot */
   public void stop() {
     runVelocity(new ChassisSpeeds());
