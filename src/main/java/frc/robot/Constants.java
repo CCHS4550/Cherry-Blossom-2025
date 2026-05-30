@@ -210,6 +210,8 @@ public final class Constants {
                 1),
             moduleTranslations);
 
+    public static final double maxModuleRotSpeedRadiansPerSec = 10;
+
     // information for out simulated robot
     public static final DriveTrainSimulationConfig mapleSimConfig =
         DriveTrainSimulationConfig.Default()

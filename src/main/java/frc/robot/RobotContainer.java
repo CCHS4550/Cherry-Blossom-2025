@@ -36,7 +36,6 @@ public class RobotContainer {
   private final Pneumatics pneumatics;
   private final Rotation rotation;
   public final Lights lights;
-  
 
   // superstructure
   private final Superstructure superstructure;
@@ -57,7 +56,8 @@ public class RobotContainer {
                 new ModuleIOSpark(0),
                 new ModuleIOSpark(1),
                 new ModuleIOSpark(2),
-                new ModuleIOSpark(3));
+                new ModuleIOSpark(3),
+                (pose) -> {});
         barrels = new Barrel(new BarrelIOSpark());
         elevation = new Elevation(new ElevationIOSpark());
         pneumatics = new Pneumatics(new PneumaticsIOHardware() {});
@@ -82,7 +82,8 @@ public class RobotContainer {
                 new ModuleIO() {},
                 new ModuleIO() {},
                 new ModuleIO() {},
-                new ModuleIO() {});
+                new ModuleIO() {},
+                (pose) -> {});
         barrels = new Barrel(new BarrelIO() {});
         elevation = new Elevation(new ElevationIO() {});
         pneumatics = new Pneumatics(new PneumaticsIO() {});
@@ -103,7 +104,8 @@ public class RobotContainer {
                 new ModuleIO() {},
                 new ModuleIO() {},
                 new ModuleIO() {},
-                new ModuleIO() {});
+                new ModuleIO() {},
+                (pose) -> {});
         barrels = new Barrel(new BarrelIO() {});
         elevation = new Elevation(new ElevationIO() {});
         pneumatics = new Pneumatics(new PneumaticsIO() {});
